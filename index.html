@@ -32,7 +32,7 @@
 		</ul>
 		<h2>Distinguishing Points from all other Tor chats:</h2>
 		<ul>
-			<li>Main feature, different from all previous Tor Chats: Initial handshakes use single-use onion services, which are destroyed after the first handshake. This allows TorX-IDs (or OnionIDs, if you prefer), to be transferred over mediums which can be monitored (such as Twitter DMs, Facebook messager, WhatsApp, etc, without allowing the adversary access to permanent metadata (an "identity"))</li>
+			<li>Initial handshakes use single-use onion services, which are destroyed after the first handshake. This allows TorX-IDs (or OnionIDs, if you prefer), to be transferred over mediums which can be monitored (such as Twitter DMs, Facebook messager, WhatsApp, etc, without allowing the adversary access to permanent metadata (an "identity"))</li>
 			<li>TorX-IDs can be shorter than onion service names ("OnionIDs", 56 characters), at <= 52 characters (48 by default), due to stripping of the version byte, the truncated checksum, and implementation of a multi-threaded onion generator to generate a *Q base32 suffix.</li>
 			<li>Group Chats (both invite-only and public) operate entirely peer-to-peer</li>
 			<li>Kill Codes -- if you believe you are are compromised, you can inform other peers and request that they delete associated keys/messages.</li>
