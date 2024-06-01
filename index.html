@@ -1,3 +1,241 @@
-
-Proof of Existence for Archive.org: 
-0bd123b8c60504dbd33de6205d2a84867ec765b4de75b2b2efcfebf99947a8fc  torx-prerelease-proof-of-existence.tar.gz
+<!DOCTYPE html>
+<html>
+<head>
+	<title>TorX | TorX.Chat | Metadata-Safe Tor Chat Library</title>
+</head>
+<body>
+	<nav>
+		<a href="#home">Home</a>
+		<a href="#howitworks">How it works</a>
+		<a href="#safety">Safety</a>
+		<a href="#download">Download</a>
+		<a href="#support">Contact / Support</a>
+		<a href="#contribute">Contribute</a>
+		<a href="#donate">Donate</a>
+	</nav>
+	<section id="home">
+		<h1>Introduction</h1>
+		<p>TorX is a C library enabling user interface developers to interface with Tor to create and manage hidden services for the purpose of transferring data peer to peer, primarily in the form of text, files, and data streams.</p>
+		<h2>Key Points:</h2>
+		<ul>
+			<li>No centralized servers, entirely peer-to-peer. The TorX project operates NO servers and clients should make NO connections outside the Tor network.</li>
+			<li>Relies entirely on Tor's v3 .onion services</li>
+			<li>Full-Duplex connection utilization (more reliable, faster transfers).</li>
+			<li>No PINGs, no ACKs (by default). Near instantaneous message delivery. Minimized network traffic.</li>
+			<li>Unlimited message sizes; fast & resumable file transfers with b3sum hash verification. Support for data streams.</li>
+			<li>Utilizes SQLCipher for storage of messages, keys, settings, Torrc</li>
+			<li>Secure memory allocation and sanitization (in the library)</li>
+			<li>Allows client developers to use the base protocols and/or implement their own text/binary/stream protocols, after handshake</li>
+			<li>Focus on reducing line counts, avoiding code duplication, providing realistic auditability. Library ~10,000 lines of C, UI clients ~8000 lines.</li>
+			<li>Limited scope. UI developers can implement the kitchen sink, but the library will forever remain lean.</li>
+			<li>Guiding Philosophy: KISS + not letting users do stupid things</li>
+		</ul>
+		<h2>Distinguishing Points from all other Tor chats:</h2>
+		<ul>
+			<li>Main feature, different from all previous Tor Chats: Initial handshakes use single-use onion services, which are destroyed after the first handshake. This allows TorX-IDs (or OnionIDs, if you prefer), to be transferred over mediums which can be monitored (such as Twitter DMs, Facebook messager, WhatsApp, etc, without allowing the adversary access to permanent metadata (an "identity"))</li>
+			<li>TorX-IDs can be shorter than onion service names ("OnionIDs", 56 characters), at <= 52 characters (48 by default), due to stripping of the version byte, the truncated checksum, and implementation of a multi-threaded onion generator to generate a *Q base32 suffix.</li>
+			<li>Group Chats (both invite-only and public) operate entirely peer-to-peer</li>
+			<li>Kill Codes -- if you believe you are are compromised, you can inform other peers and request that they delete associated keys/messages.</li>
+			<li>Protocol independence: The library doesn't care whether you transfer text/binary/stream, and supports custom protocols.</li>
+			<li>Pure C library allowing easy integration into any UI language.</li>
+		</ul>
+		<h2>History:</h2>
+		<p>The developer was tired of having to manage dozens of anonymous email, XMPP accounts, and associated keys, on top of having to maintain anonymity. We all are.</p>
+		<p>The developer's friend's family member ended up on Interpol's "Red List" and the developer watched their friend struggle to maintain constant communication with their family member, sometimes going for weeks without communication, as their family member travelled the world using a combination of illicitly obtained passports and unlawful border crossings. When they were in contact, one day they would use a Korean instant messenger, the next day one from Pakistan, and on. It was tedious and unreliable.</p>
+		<p>The developer was inspired to solve this problem not just for the technically competent (like the developer), but also for the technically illiterate (like the developer's friend and their family member).</p>
+		<h2>Threat Model</h2>
+		<ul>
+			<li><a href="https://en.wikipedia.org/wiki/Five_Eyes">Five Eyes</a> affiliated advanced nation state(s) with near unlimited access and resources, including the ability to compromise or drone strike users' endpoint devices, if identified.</li>
+		</ul>
+		<h2>Primary Goals:</h2>
+		<ul>
+			<li>Prevent any advanced nation state from being able to know who any user is communicating with, to prevent targetted supply-chain attacks and endpoint compromise</li>
+			<li>Allow users to manage unlimited identities in a single client and minimize (as much as technologically possible) the ability to correlate the accounts.</li>
+			<li>Allow you to securely and safely chat with your grandma and <a href="https://www.interpol.int/en/How-we-work/Notices/Red-Notices/View-Red-Notices/">someone on the Interpol Red List</a> at the same time, using the same client.</li>
+		</ul>
+	</section>
+	<section id="howitworks">
+		<h1>How It Works</h1>
+		<p>WARNING: Diagrams can be inaccurate, outdated, and unclear. These diagrams ARE incomplete and REQUIRE updating.</p>
+		<pre>
+Handshake with V3Key / V3Auth Diagram:
+________________________________________________________________________________
+|	SING <---VV[2]+PeerOnion[56]+PeerV3KeyB64.pub[52]--- Peer		|
+|	||		(down)							|
+|	\/									|
+|	Gen_CTRL								|
+|	+ PeerV3Key ---VV[2]+CtrlOnion[56]+V3KeyB64.pub[52]---> Peer		|
+|				(up)			   ||			|
+|							   \/			|
+|					(Brings up PeerOnion with V3Key)	|
+|_______________________________________________________________________________|
+		</pre>
+		<pre>
+Private Group Handshake with Signed Messaging Diagram:
+(Note: Group_Ctrl is passed in Group_offer when PeerCount == 0, and is signed in GROUP_OFFER_ACCEPT(_FIRST)
+_________________________________________________________________________________________________________________________
+|	GROUP_OFFER(_FIRST) ---GroupID[32]+PeerCount[4]+InviteRequired[1](+Group_Ctrl[56]+ed25519_pk[32])---> Invitee	|
+|												||			|
+|												\/			|
+|									(Accepts invitation(+Signs creator Group_Ctrl))	|
+|										(Generate Group_CTRL+Keypair)		|
+|	Inviter	<---GroupID[32]+Group_Ctrl[56]+ed25519_pk[32](+InvitationSignature[64])--- GROUP_OFFER_ACCEPT(_FIRST)	|
+|	||														|
+|	if(peercount > 0) ---PEERLIST---> Invitee, who trusts it if !peerlist && group[g].n > 0				|
+|	||														|
+|	\/														|
+|	(Sign Invitee's Group_Ctrl)					(Sign invitee + Provide invitor invitation)	|
+|	GROUP_OFFER_ACCEPT_REPLY ---GroupID[32]+Group_Ctrl[56]+ed25519_pk[32]+InviteeSignature[64]			|
+|	||									+InvitorSignature[64]---> Invitee	|
+|	||												||		|
+|	\/												\/		|
+|	(group_add_peer --> Connect/Chat)					(group_add_peer --> Connect/Chat)	|
+|_______________________________________________________________________________________________________________________|
+		</pre>
+		<pre>
+Public Group Handshake with Signed Messaging Diagram: // TODO
+_________________________________________________________________________________________________________________________
+|	GROUP_OFFER ---GroupID[32]+PeerCount[4]+InviteRequired[1]---> Invitee						|
+|															|
+|	(Generate Group_CTRL+Keypair)											|
+|	GROUP_PUBLIC_ENTRY_REQUEST --- ---> All online peers, unless responding to particular peer 			|
+|???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????|
+|???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????|
+|	(group_add_peer --> Connect/Chat)					(group_add_peer --> Connect/Chat)	|
+|_______________________________________________________________________________________________________________________|
+		</pre>
+		<pre>
+Connecting to other peers after joining a private group (this message is in-group): TODO
+_________________________________________________________________________________________________________________________
+|															|
+|								GROUP_REQUEST_PEERLIST ---[0]---> Group_Peer		|
+|												||			|
+|												||			|
+|	Group_Ctrl <---(Signature[64])(Timestamp[4+4])+Peercount[4]+Onions[56*peercount]	\/			|
+|	||		+Ed25519_pk(s)[32*peercount]+InvitationSignature(s)[64*peercount]--- GROUP_PEERLIST		|
+|	||														|
+|	\/														|
+|	(add new peers)													|
+|	GROUP_ENTRY_REQUEST ---GroupID[32]+Group_Ctrl[56]+ed25519_pk[32]+InvitationSignature[64]---> (new) Group_Peer(s)|
+|														||	|
+|														\/	|
+|								Group_Ctrl <---[0]-- GROUP_ENTRY_REQUEST_REPLY_OK	|
+|							(update status)				(add new peer)		|
+|							(Connect/Chat)				(Connect/Chat)		|
+|_______________________________________________________________________________________________________________________|
+		</pre>
+		<pre>
+Message Diagram (2024/05/31 version, current) Applies to all messages types except ENUM_PROTOCOL_FILE_PIECE
+_________________________________________________________________________________________________________________________________________________________________
+|	Packet Len		[2] uint16_t		Unsigned, every packet. Not included in .message_len							|
+|	Protocol		[2] uint16_t		Signed, every packet. Not included in .message_len							|
+|	Message Len		[4] uint32_t		Signed, only in first packet. Not included in .message_len						|
+|	Message			[.message_len]		Included in .message_len										|
+|	{ '\0'	}		{ [1] }			Only where message is expected to a string, included in .message_len (therefore signed if applicable)	|
+|	{ Time }		{ [4] uint32_t }	Only on dated messages, included in .message_len (therefore signed if applicable)			|
+|	{ NSTime }		{ [4] uint32_t }	Only on dated messages, included in .message_len (therefore signed if applicable)			|
+|	{ Signature }		{ [crypto_sign_BYTES] }	Only on signed messages, included in .message_len (NOT ITSELF SIGNED)					|
+|_______________________________________________________________________________________________________________________________________________________________|
+		</pre>
+	</section>
+	<section id="safety">
+		<h1>Safety</h1>
+		<p>As of intial pre-release (June 2024), this is absolute bleeding-edge alpha software. It's absolutely not ready to be used with untrusted peers at this time. This is the primary reason it is open source but not FOSS *yet*.</p>
+		<h3>DO:</h3>
+		<ul>
+			<li><a href="#contribute">Contribute</a> or <a href="#donate">donate</a>.</li>
+			<li>Download your binaries or source code over Tor. Alternatively, download signatures over Tor.</li>
+			<li>Use single-use IDs, not multi-use, when possible.</li>
+			<li>Prefer invite-only groups over public groups (invitor is tracked)</li>
+			<li>Prefer direct messaging over group chats</li>
+			<li>Understand the primary limitation: Connection/disconnection times can allow peers connected to you in groups and otherwise to make highly accurate correlations between your various identities</li>
+			<li>Only communicate with trusted peers (for now)</li>
+		</ul>
+		<h3>DO NOT:</h3>
+		<ul>
+			<li>Package it for public repositories (Debian, Arch, FDroid, Google Play, Microsoft Store, etc). It is not ready.</li>
+			<li>Connect to potential adversaries / malicious peers. It is not ready.</li>
+			<li>Use groups or multi-use IDs without understanding the implications: Connection/disconnection times can allow peers connected to you in groups and otherwise to make highly accurate correlations between your various identities</li>
+			<li>Fail to strip metadata from files. Stripping metadata from file transfers is beyond the scope of the library and currently not implemented by either UI client.</li>
+		</ul>
+	</section>
+	<section id="download">
+		<h1>Download</h1>
+		<p>Two proof-of-concept TorX UI clients are currently available for Android and Linux. It will soon be available for Windows and Mac. Later we intend for it to be available on iOS.</p>
+	</section>
+	<section id="support">
+		<h1>Contact / Support</h1>
+		<p>At the present time, due to the alpha status of the software, the preferred method of obtaining support is on IRC. The following channels exist, in order of preference:</p>
+		<ul>
+			<li>#TorX on irc.oftc.net:6697 (most tor friendly)</li>
+			<li>#TorX on irc.libera.chat:6697 (somewhat tor friendly)</li>
+			<li>#TorX on irc.rizon.net:6697 (not tor friendly)</li>
+		</ul>
+		<p>The lead developer's IRC nick is "TorX" and their client supports OTR (Off The Record) encryption. Please do not do anything in the channels that violates the respective network's Terms of Service. If you need help connecting to IRC, ask ChatGPT.</p>
+		<p>If absolutely necessary, the developer can be contacted by email: </p>
+		<ul>
+			<li>gpg --keyserver keyserver.ubuntu.com --search-keys 59D072806B6CAA11</li>
+			<li>gpg --keyserver keyserver.ubuntu.com --search-keys 3367C7F5C52D971F</li>
+		</ul>
+	</section>
+	<section id="contribute">
+		<h2>Contribute</h2>
+		<p>We need experienced contributors for the following key technical roles:</p>
+		<ul>
+			<li>GTK4 Maintainer(s)</li>
+			<li>Flutter Maintainer(s)</li>
+			<li>CMake/Build Maintainer(s)</li>
+			<li>NCurses Developer(s)</li>
+			<li>iOS Developer(s)</li>
+			<li>C auditors/documentors (lots)</li>
+			<li>Red team / malicious client devs</li>
+		</ul>
+		<p>You are also welcome to offer contribution of other services:</p>
+		<ul>
+			<li>Translation (of the clients) into major languages</li>
+			<li>Legal services</li>
+			<li>Graphics design</li>
+			<li>Web development</li>
+			<li>Wikipedia related tasks</li>
+			<li>SEO</li>
+			<li>Promotion</li>
+			<li>Outreach (to individuals and groups who could benefit)</li>
+			<li>Fundraising</li>
+			<li>Alternative UI client development</li>
+			<li>Celebrity endorsement</li>
+			<li>etc...</li>
+		</ul>
+		<p>Contributors are expected to:</p>
+		<ul>
+			<li>Write good code</li>
+			<li>Maintain coding styles (especially in the library)</li>
+			<li>Not spam our channels with excessive drama / off-topic discussion</li>
+		</ul>
+		<p>Contributions can be provided publically or privately. Contributors are welcome to provide their contributions anonymously.</p>
+		<p>Contributors' private lives are not our concern. If your public or private life actions cause harm to the image of the project, we may ban your pseudonym, which could require you to evade the ban in order to continue providing your much valued contributions to the project.</p>
+	</section>
+	<section id="donate">
+		<h2>Donate</h2>
+		<p>Donations will be provided to the developer of TorX in a personal capacity. Donations will either be received directly (if in cryptocurrency) or provided through an intermediary (all other payment methods). Payments received other than through cryptocurrency are subject to fees by the payment processor. No taxes will be paid (donations constitute gifts), but donations are not tax deductible.</p>
+		<ul>
+			<li>PayPal: <img src="email.gif" alt="Email Address Hidden"/></li>
+			<li>Interac Email Money Transfer (Canada-Only): <img src="email.gif" alt="Email Address Hidden"/></li>
+			<li>Recurrent Donations: https://liberapay.com/TorX-Chat/</li>
+			<li>Monero (MNR): 44TorX3YsBrLP9EwkBJXvY5jcak3KDu318uQoQ8bPb5X9sXfddc9GbLXv3QboXs7Qs5FnXs92g3d6DZnzfx3mdFHKfUVabp</li>
+			<li>Bitcoin (BTC): 1TorXkp2jYTzZFUKXEmTf3ETprSpqoXxj</li>
+			<li>Litecoin (LTC): LTorXoea8kP7hv2CFWRtei7wA7FsZgfaib</li>
+			<li>Wire transfer:
+			<br>Recipient Surname: King
+			<br>Recipient Given name: Kieran Clarke
+			<br>Institution Number: 003
+			<br>Bank Transit number: 05538
+			<br>Account number: 5075486
+			<br>Routing/ABA number (for transfers from USA): 021000021
+			<br>SWIFT BIC: ROYCCAT2
+			<li>ZCash: (coming soon)</li>
+			<li>OnlyFans: (coming soon)</li>
+		</ul>
+		<p>Signal gets <a href="https://en.wikipedia.org/wiki/Signal_(messaging_app)#Developers_and_funding">>$50,000,000 a year</a> for less security than TorX intends to offer. Send $50,000,000 to TorX and development will be supported until the robots take over.</p>
+	</section>
+</body>
+</html>
