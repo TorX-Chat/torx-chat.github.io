@@ -2,6 +2,30 @@
 <html>
 <head>
 	<title>TorX | TorX.Chat | Metadata-Safe Tor Chat Library</title>
+<style>
+	a:link, a:visited {
+		color: #add8e6;
+	}
+	body, html {
+		margin: 0;
+		padding: 0;
+		height: 200%; /* to make sure there's enough content to scroll */
+		background-color: #181a1b;
+		color: white;
+	}
+	nav {
+		position: fixed;
+		width: 100%;
+		background-color: #333;
+		color: white;
+		padding: 5px 0;
+		text-align: center;
+		z-index: 1000; /* ensures the nav stays on top of other content */
+	}
+	section {
+		padding-top: 30px; /* extra space to ensure content is not hidden behind the fixed nav */
+	}
+</style>
 </head>
 <body>
 	<nav>
@@ -16,6 +40,7 @@
 		<a href="https://github.com/TorX-Chat/">Github</a>
 	</nav>
 	<section id="home">
+		<img alt="Logo" width="256" height="256" src="https://raw.githubusercontent.com/TorX-Chat/torx-gtk4/main/other/scalable/apps/logo-torx-symbolic.svg" align="right" style="position: relative; top: 0; left: 0;">
 		<h1>Introduction</h1>
 		<p>TorX is a C library enabling user interface developers to interface with Tor to create and manage hidden services for the purpose of transferring data peer to peer, primarily in the form of text, files, and data streams.</p>
 		<h2>Key Points:</h2>
