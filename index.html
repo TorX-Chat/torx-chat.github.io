@@ -2,30 +2,42 @@
 <html>
 <head>
 	<title>TorX | TorX.Chat | Metadata-Safe Tor Chat Library</title>
-<style>
-	a:link, a:visited {
-		color: #add8e6;
+	<style>
+		a:link, a:visited {
+			color: #add8e6;
+		}
+		body {
+			margin: 0;
+			padding: 0;
+			height: 200%; /* to make sure there's enough content to scroll */
+			background-color: #181a1b;
+			color: white;
+		}
+		nav {
+			position: fixed;
+			width: 100%;
+			background-color: #333;
+			color: white;
+			padding: 5px 0;
+			text-align: center;
+			z-index: 1000; /* ensures the nav stays on top of other content */
+		}
+		section {
+			margin-left: 5px;
+			padding-top: 30px; /* extra space to ensure content is not hidden behind the fixed nav */
+		}
+	/* For mobile */
+	@media (max-width: 600px) {
+		nav {
+			padding: 20px 0;
+			font-size: 20px; /* larger to make clicking easier */
+		}
+		section {
+			margin-left: 15px;
+			padding-top: 90px; /* increased padding to accommodate larger nav */
+		}
 	}
-	body, html {
-		margin: 0;
-		padding: 0;
-		height: 200%; /* to make sure there's enough content to scroll */
-		background-color: #181a1b;
-		color: white;
-	}
-	nav {
-		position: fixed;
-		width: 100%;
-		background-color: #333;
-		color: white;
-		padding: 5px 0;
-		text-align: center;
-		z-index: 1000; /* ensures the nav stays on top of other content */
-	}
-	section {
-		padding-top: 30px; /* extra space to ensure content is not hidden behind the fixed nav */
-	}
-</style>
+	</style>
 </head>
 <body>
 	<nav>
