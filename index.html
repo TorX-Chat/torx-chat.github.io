@@ -19,8 +19,8 @@
 		<p>TorX is a C library enabling user interface developers to interface with Tor to create and manage hidden services for the purpose of transferring data peer to peer, primarily in the form of text, files, and data streams.</p>
 		<h2>Key Points:</h2>
 		<ul>
-			<li>No centralized servers, entirely peer-to-peer. The TorX project operates NO servers and clients should make NO connections outside the Tor network.</li>
-			<li>Relies entirely on Tor's v3 .onion services</li>
+			<li>No centralized servers, entirely peer-to-peer: The TorX project operates NO servers and clients should make NO connections outside the Tor network.</li>
+			<li>Relies entirely on Tor's v3 .onion services, with v3 authentication.</li>
 			<li>Full-Duplex connection utilization (more reliable, faster transfers).</li>
 			<li>No PINGs, no ACKs (by default). Near instantaneous message delivery. Minimized network traffic.</li>
 			<li>Unlimited message sizes; fast & resumable file transfers with b3sum hash verification. Support for data streams.</li>
@@ -28,7 +28,7 @@
 			<li>Secure memory allocation and sanitization (in the library)</li>
 			<li>Allows client developers to use the base protocols and/or implement their own text/binary/stream protocols, after handshake</li>
 			<li>Focus on reducing line counts, avoiding code duplication, providing realistic auditability. Library ~10,000 lines of C, UI clients ~8000 lines.</li>
-			<li>Limited scope. UI developers can implement the kitchen sink, but the library will forever remain lean.</li>
+			<li>Limited scope: UI developers can implement the kitchen sink, but the library will forever remain lean.</li>
 			<li>Guiding Philosophy: KISS + not letting users do stupid things</li>
 		</ul>
 		<h2>Distinguishing Points from all other Tor chats:</h2>
