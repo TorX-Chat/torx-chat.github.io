@@ -1,0 +1,13 @@
+Categories:
+  - Internet
+SourceCode: https://github.com/TorX-Chat/torx-flutter
+IssueTracker: https://github.com/TorX-Chat/torx-flutter/issues
+
+Summary: Metadata-Safe Tor Chat Application
+Description: |
+  See TorX.Chat for details
+
+Icon: icons/icon.png
+Screenshots:
+  - images/screenshot1.png
+  - images/screenshot2.png
