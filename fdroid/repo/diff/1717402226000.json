@@ -1,1 +1,1 @@
-{"repo": {"icon": {"en-US": {"name": "/icons/icon.png"}}, "timestamp": 1717404148000}}
+{"repo": {"icon": {"en-US": {"name": "/icons/icon.png", "sha256": "5f4f7577f7eacbb0fc6f7b6d2b84ae07f3bedcda934527d0fc6275c5e3cb815f", "size": 705}}, "address": "https://torx-chat.github.io/fdroid/repo", "mirrors": [{"isPrimary": true, "url": "https://torx-chat.github.io/fdroid/repo"}, {"url": "https://TorX.Chat/fdroid/repo"}], "timestamp": 1717405539000}}
