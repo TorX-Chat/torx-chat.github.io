@@ -188,6 +188,12 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
+			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
+			<ul>
+				<li>Set BUILD_BINARIES 1</li>
+				<li>Resolve issues / causes of unnecessary rebuilds</li>
+				<li>Allow forcing of rebuilds for when deps change? CMake can ideally handle this</li>
+			</ul>
 			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main</li>
 			<li>Can we onload and offload message history? Keep last 50 messages of every peer, but dump the rest to save RAM?</li>
 			<li>Calling peer_accept() while actively modifying peernick results in modifications being lost</li>
