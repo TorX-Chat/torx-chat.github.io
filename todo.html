@@ -97,6 +97,7 @@
 			<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			<li>Eliminate fork() by implementing CreatePipe or other, so we can build on Windows</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
+			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
 			<li>Bug: Private messages are not full duplex? (seems not sending on orange/recvfd)</li>
 			<li>save_dir_always_ask should be eliminated in GTK4, in favor of download_dir. GTK4/Flutter should have a set/unset + directory picker</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
