@@ -154,7 +154,6 @@
 	<section id="ui">
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<ul>
-			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>Have a tooltip that shows TorX-IDs, at least on the group's peerlist</li>
 			<li>Need to implement our fancy new .SVG icons (can wait for GTK4.14)</li>
 			<li>Flash entry box red when no nick is entered for generating (generate_onion) or adding onion (save_peer), or when an invalid onion is passed (bad checksum)</li>
@@ -175,9 +174,8 @@
 			<li>Track threads (2) related to appindicator.c/main_gtk4.c and cleanup like we do in library</li>
 			<li>Update org.torx.gtk4.desktop file + "make install"</li>
 			<li>Create .deb file + Debian repo</li>
-			<li>Close to tray should not exist concurrently with minimize to tray</li>
 			<li>Review how/where we are finding the torx-tray binary.</li>
-			<li>Resolve the GTK3 Critical error that occurs 50% of the time when starting torx-tray.</li>
+			<li>torx-tray doesn't reliably start either due to GTK3 Critical or (probably) a race condition.</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Scroll direction is inverted, which is annoying but is preferable to not using INVERSION_TEST</li>
 			<li>Images should be clickable (to show larger), should automatically render after reaching 100% transferred (inbound).</li>
@@ -195,10 +193,11 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
+			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
 				<li>Set BUILD_BINARIES 1</li>
-				<li>Resolve issues / causes of unnecessary rebuilds</li>
+				<li>Resolve issues / causes of unnecessary rebuilds (libevent related issue)</li>
 				<li>Allow forcing of rebuilds for when deps change? CMake can ideally handle this</li>
 			</ul>
 			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main</li>
