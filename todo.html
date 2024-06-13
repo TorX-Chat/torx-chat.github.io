@@ -100,7 +100,7 @@
 		<ul>
 			<li>CMakeLists.txt: set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 			<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
-			<li>Eliminate fork() by implementing CreatePipe or other, so we can build on Windows</li>
+			<li>Build on Windows</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
 			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
 			<li>Bug: Private messages are not full duplex? (seems not sending on orange/recvfd)</li>
@@ -137,8 +137,7 @@
 			<li>Add a counter or bunch of counters that increment every time a malloc occurs, so we can know how many leaks we got. (optionally in what areas)</li>
 			<li>Public Groups could hypothetically also be shortened in length (pointless), or allow external generation (pointless)</li>
 			<li>Consider having UTF8 validator shift forward over any non-utf8 bytes, for use in libevent.c and perhaps message_send (to avoid sql issues), rather than discarding whole messages.</li>
-			<li>Consider replacing fork() exec() with posix_spawn()</li>
-			<li>Implement run_binary with optional STDIN string, for verify_config (requires stdin), which, hash_password, get_tor_version, etc.</li>
+		<!--	<li>Consider replacing fork() exec() with posix_spawn()</li> -->
 			<li>For GROUP_PEER, .message and .message_len could be double pointer + pointer, respectively. Unsure if viable and how we would re-structure our message struct for that. This can be ignored for now so long as we aren't having bugs.</li>
 		</ul>
 		<h4>Possibly no longer relevant:</h4>
@@ -154,6 +153,7 @@
 	<section id="ui">
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<ul>
+			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>Have a tooltip that shows TorX-IDs, at least on the group's peerlist</li>
 			<li>Need to implement our fancy new .SVG icons (can wait for GTK4.14)</li>
 			<li>Flash entry box red when no nick is entered for generating (generate_onion) or adding onion (save_peer), or when an invalid onion is passed (bad checksum)</li>
