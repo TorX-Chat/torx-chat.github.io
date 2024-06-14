@@ -100,7 +100,7 @@
 		<ul>
 			<li>CMakeLists.txt: set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 			<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
-			<li>Build on Windows</li>
+			<li>Build on Windows: poll() needs replacing, read() needs wrapper function.</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
 			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
 			<li>Bug: Private messages are not full duplex? (seems not sending on orange/recvfd)</li>
@@ -153,6 +153,7 @@
 	<section id="ui">
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<ul>
+			<li>Expose save_all_stickers toggle</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>Have a tooltip that shows TorX-IDs, at least on the group's peerlist</li>
 			<li>Need to implement our fancy new .SVG icons (can wait for GTK4.14)</li>
@@ -189,6 +190,9 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
+			<li>Snowflake crashes in latest build</li>
+			<li>Looping beeps on Samsung devices. Possible cause: FlutterRingtonePlayer.playNotification() has a loop argument that we don't set</li>
+			<li>No visible notification on Samsung devices</li>
 			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
