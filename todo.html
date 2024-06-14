@@ -122,6 +122,8 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>get_tor_version should probably be called again if a new Tor binary is selected, which means it needs locks too.</li>
+			<li>Consider implementation of Proof of Work https://spec.torproject.org/hspow-spec/v1-equix.html for multiple use IDs, when sufficiently mature</li>
 			<li>Convert or eliminate remaining ~100 printf to error_printf</li>
 			<li>Takedown_onion must call disconnect_forever in a threadsafe manner. We've tried everything (evbuffer_lock, event_base_once, etc) and can't find a way.</li>
 			<li>file_init() calculates a checksum every time it offers a file. We have modification time now but we don't use it for anything.</li>
@@ -190,9 +192,10 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
-			<li>Snowflake crashes in latest build. Likely related to use of alpha build of Tor. Need to ship a stable Tor binary.</li>
+			<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
 		<!--	<li>Looping beeps on Samsung devices. Possible cause: FlutterRingtonePlayer.playNotification() has a loop argument that we don't set</li> -->
 			<li>No visible notification on Samsung devices</li>
+			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
 			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
