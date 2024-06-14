@@ -192,18 +192,18 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
-			<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
 		<!--	<li>Looping beeps on Samsung devices. Possible cause: FlutterRingtonePlayer.playNotification() has a loop argument that we don't set</li> -->
 			<li>No visible notification on Samsung devices</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
 			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
-				<li>Set BUILD_BINARIES 1</li>
-				<li>Resolve issues / causes of unnecessary rebuilds (libevent related issue)</li>
+				<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
+				<li>Hardcode BUILD_BINARIES 1 temporarily</li>
+				<li>Resolve issues / causes of unnecessary rebuilds (libevent related issue). Alternatively, BUILD_ALWAYS TRUE or otherwise force clean rebuild of libevent.</li>
 				<li>Allow forcing of rebuilds for when deps change? CMake can ideally handle this</li>
 			</ul>
-			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main</li>
+			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
 			<li>Can we onload and offload message history? Keep last 50 messages of every peer, but dump the rest to save RAM?</li>
 			<li>Calling peer_accept() while actively modifying peernick results in modifications being lost</li>
 			<li>autoRunOnBoot: true (foreground task) + fix BootBroadcastReceiver.kt, then have a toggle in settings page for both.</li>
