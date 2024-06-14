@@ -190,8 +190,8 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
-			<li>Snowflake crashes in latest build</li>
-			<li>Looping beeps on Samsung devices. Possible cause: FlutterRingtonePlayer.playNotification() has a loop argument that we don't set</li>
+			<li>Snowflake crashes in latest build. Likely related to use of alpha build of Tor. Need to ship a stable Tor binary.</li>
+		<!--	<li>Looping beeps on Samsung devices. Possible cause: FlutterRingtonePlayer.playNotification() has a loop argument that we don't set</li> -->
 			<li>No visible notification on Samsung devices</li>
 			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
