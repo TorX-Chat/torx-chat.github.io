@@ -67,6 +67,7 @@
 		</ul>
 		<h4>For public discussion:</h4>
 		<ul>
+			<li>Keyboard Privacy in Flutter being enabled by default: it breaks non-alphabetical languages such as Chinese</li>
 			<li>Git submodules vs ExternalProjects_Add vs other?</li>
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
 			<li>Use timezone info to determine default torrc? (this could really be a UI thing, though we do have the censored_region variable in lib). Timezone + language would be more effective.</li>
@@ -175,6 +176,7 @@
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
 		<ul>
+			<li>After unhiding from torx-tray, latest messages are not visible, if a current chat is open.</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Scroll direction is inverted, which is annoying but is preferable to not using INVERSION_TEST</li>
@@ -193,10 +195,8 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
-		<!--	<li>Looping beeps on Samsung devices. Possible cause: FlutterRingtonePlayer.playNotification() has a loop argument that we don't set</li> -->
-			<li>No visible notification on Samsung devices</li>
+			<li>Lifecycle: Notifications should be handled by the persistant notification so that the relevant callback functions are not disposed of when swiping application away. If this is insufficient, relevent callbacks and notifications need to be written in Java/Kotlin.</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
-			<li>Lifecycle: When the UI layer is disposed of, prior to re-expand being called, notifications stop functioning. Likely because callbacks have been deregistered. Unsure how to resolve.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
 				<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
