@@ -80,10 +80,11 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>2024/04/26: Group PM messages are STILL going to the wrong person sometimes. Cause is unknown. Displays as "fail" with right recipient name, but the wrong person receives it.</li>
+		<!--	<li>2024/04/26: Group PM messages are STILL going to the wrong person sometimes. Cause is unknown. Displays as "fail" with right recipient name, but the wrong person receives it.</li>
 			<ul>
 				<li>Spagetti Code: Audit message_prep && message_distribute</li>
-			</ul>
+			</ul> -->
+			<li>libevent.c: Review output_cb, packet_removal</li>
 			<li>libevent.c: Review accept_conn, error_conn, close_conn, loop exit</li>
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len)</li>
 			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
