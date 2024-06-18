@@ -71,6 +71,8 @@
 			<li>Git submodules vs ExternalProjects_Add vs other?</li>
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
 			<li>Use timezone info to determine default torrc? (this could really be a UI thing, though we do have the censored_region variable in lib). Timezone + language would be more effective.</li>
+			<li>Hardcoded nick length limit of 56 is unnecessary and possibly problematic: not all characters are 1 byte. Example: emojis, chinese characters, etc.</li>
+			<li>File transfers: fallocate(linux)/lseek(linux) or pre-allocate files in some sort of null state. Would have to do this in OS specific manners https://devblogs.microsoft.com/oldnewthing/20160714-00/?p=93875</li>
 		<!--	<li>M****o-cli integration (not before full release / 2025)</li>
 			<ul>
 				<li>Might be difficult to implement for mobile if unsafe shutdowns of M****o cause b********n indexing corruption. However M****o-cli offers remote b********n options that would probably be safe from unsafe shutdowns.</li>
@@ -85,7 +87,7 @@
 			<ul>
 				<li>Spagetti Code: Audit message_prep && message_distribute</li>
 			</ul> -->
-			<li>libevent.c: Review output_cb, packet_removal</li>
+			<li>Cleanup / remove old TODO notes at the top of torx_core.c</li>
 			<li>libevent.c: Review accept_conn, error_conn, close_conn, loop exit</li>
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len)</li>
 			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
@@ -94,12 +96,14 @@
 			<li>To reveal 1300+ thread-unsafe reads, remove -Wno-unsafe-buffer-usage from CMakeLists.txt</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>!v3auth is no longer considered safe. Appears to be operating full duplex. If !v3auth, must utilize auth pipes. Then we can tear out some legacy code and perhaps ENUM_PROPOSE_UPGRADE, which is not well tested. Need to test with an old Tor binary.</li>
-			<li>Verify that kill_delete == 0 --> 'Block' and MUST change the priv/onion/peeronion to some fakes, but retain message data and name. Could set it to generate legitimate fakes, or invalid ones. Unsure about which is best.</li>
+			<li>kill_delete == 0 --> 'Block' and MUST (currently does not!) change the priv/onion/peeronion to some fakes, but retain message data and name. Could set it to generate legitimate fakes, or invalid ones. Then call sql_update_peer(n)</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping). Minor notice for incomplete, major for invalid + counter. Warning: After a file is cancelled, a peer can keep sending data or re-start sending data and we receive/disgard it. This could be exploited to monitor a peer. Need to somehow notify a peer that such packets are still inbound.</li>
+			<li>It is likely possible to send an ACCEPT on a modified-since-offered file from long ago that the sender still has the path of in their log history. Transfer will fail checksum verification upon receipt, but could be exploitable for exfiltrating unintended data. Should at least verify modification times (and do a checksum if failing) before sending data.</li>
 			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>which() should fallback to looking in current directory, if path fails</li>
 			<li>CMakeLists.txt: set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 			<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			<li>Build on Windows: poll() needs replacing, read() needs wrapper function.</li>
@@ -124,6 +128,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Could allow protocols to require an acknowledgement of by sending a checksum back. Using a checksum is more CPU intensive than ideal but ensures the completeness of the message and does not require both sides to keep a shared index number of any type.</li>
 			<li>get_tor_version should probably be called again if a new Tor binary is selected, which means it needs locks too.</li>
 			<li>Consider implementation of Proof of Work https://spec.torproject.org/hspow-spec/v1-equix.html for multiple use IDs, when sufficiently mature</li>
 			<li>Convert or eliminate remaining ~100 printf to error_printf</li>
@@ -143,6 +148,7 @@
 			<li>Consider having UTF8 validator shift forward over any non-utf8 bytes, for use in libevent.c and perhaps message_send (to avoid sql issues), rather than discarding whole messages.</li>
 		<!--	<li>Consider replacing fork() exec() with posix_spawn()</li> -->
 			<li>For GROUP_PEER, .message and .message_len could be double pointer + pointer, respectively. Unsure if viable and how we would re-structure our message struct for that. This can be ignored for now so long as we aren't having bugs.</li>
+			<li>Consider ripping out libsodium and replacing it with with openssl (since it is already a tor dependency) or libressl. Be sure that we can do everything in onion_gen.c (ex: crypto_sign_ed25519_pk_to_curve25519)</li>
 		</ul>
 		<h4>Possibly no longer relevant:</h4>
 		<ul>
@@ -153,10 +159,12 @@
 			<li>Test in debugger before investing time: illegal reads could result if we have >10 group files, since everyting occurs on peer[n].file[f] of group_peer_n, which may not be allocated.</li>
 			<li>If there is any file transfer corruption caused by repeated pauses and restarts, it is due to races on ].fd_out_</li>
 			<li>2024/03/11 Utilizing the return of message_insert(), we could permit the modification of messages ... but only group messages, ???</li>
+			<li>Putting no incoming auth doesn't prevent connections. Test this, but based on logs from invalid auth, it seems auth is optional.</li>
 		</ul>
 	<section id="ui">
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<ul>
+			<li>"Delete Logs" --> "Clear Logs"</li>
 			<li>Expose save_all_stickers toggle</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>Have a tooltip that shows TorX-IDs, at least on the group's peerlist</li>
@@ -172,6 +180,7 @@
 			<li>Tooltips: Use text_tooltip_ prefix. For flutter, https://material.io/components/tooltips</li>
 			<li>String functions in UI should use secure allocators/de-allocators, if possible. (Note: not possible?)</li>
 			<li>Consider registering a URI? ie: "torx:" Base64 would be a grup, base32 would be a SING/MULT. is_valid_b32_input( and b64_isvalidchar( in conjunction can determine whether a string is peer/group/trash, for use with 'Search' or invalid input when adding peer.</li>
+			<li>Could have a toggleable option about whether to run as a tor binary as a middle node (this would support the network, but be bandwidth eating)</li>
 		</ul>
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
