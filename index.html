@@ -140,15 +140,20 @@ ________________________________________________________________________________
 |_______________________________________________________________________________________________________________________|
 		</pre>
 		<pre>
-Public Group Handshake with Signed Messaging Diagram: // TODO
+Public Group Handshake with Signed Messaging Diagram:
 _________________________________________________________________________________________________________________________
-|	GROUP_OFFER ---GroupID[32]+PeerCount[4]+InviteRequired[1]---> Invitee						|
-|															|
+|	(Someone scans the Public Group ID off a QR code)								|
 |	(Generate Group_CTRL+Keypair)											|
-|	GROUP_PUBLIC_ENTRY_REQUEST --- ---> All online peers, unless responding to particular peer 			|
-|???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????|
-|???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????|
-|	(group_add_peer --> Connect/Chat)					(group_add_peer --> Connect/Chat)	|
+|	GROUP_BROADCAST ---> All online peers ---> All their online peers (promulgates through network)			|
+|															|
+|	(Someone in Group) ---> (decrypts GROUP_BROADCAST) ---> GROUP_PUBLIC_ENTRY_REQUEST --->	New peer		|
+|										(group_add_peer --> Connect/Chat)	|
+|												||			|
+|												\/			|
+|	(Someone in Group)							<--- GROUP_PUBLIC_ENTRY_REQUEST		|
+|		||													|
+|		\/													|
+|	(group_add_peer --> Connect/Chat)										|
 |_______________________________________________________________________________________________________________________|
 		</pre>
 		<pre>
@@ -185,21 +190,33 @@ ________________________________________________________________________________
 |_______________________________________________________________________________________________________________________________________________________________|
 		</pre>
 		<pre>
-Base protocols (2024/05/31 version, current). Describes content of "Message" from the "Message Diagram". Numbers (1, 4, 8, 32, 64) are byte counts. Typically 1-8 is unsigned int in network order.
+Base protocols Diagrams (2024/05/31 version, current). Describes content of "Message" from the "Message Diagram". [Numbers] are byte counts. 1-8 bytes are unsigned int in network order (Big endian).
 _________________________________________________________________________________________________________________________________________________________________________________
 |	ENUM_PROTOCOL_FILE_OFFER			CHECKSUM[64] + SIZE[8] + MODIFIED[4] + FILENAME (no null termination)							|
+|	ENUM_PROTOCOL_FILE_OFFER_PRIVATE		CHECKSUM[64] + SIZE[8] + MODIFIED[4] + FILENAME (no null termination)							|
+|	ENUM_PROTOCOL_FILE_PAUSE			CHECKSUM[64]														|
+|	ENUM_PROTOCOL_FILE_CANCEL			CHECKSUM[64]														|
 |	ENUM_PROTOCOL_FILE_OFFER_GROUP			HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + MODIFIED[4] + FILENAME (no null termination)	|
 |	ENUM_PROTOCOL_FILE_OFFER_GROUP_DATE_SIGNED	HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + MODIFIED[4] + FILENAME (no null termination)	|
 |	ENUM_PROTOCOL_FILE_OFFER_PARTIAL		HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + split_info[section][8] *(splits + 1)		|
 |	ENUM_PROTOCOL_FILE_REQUEST			CHECKSUM[64] + START[8] + END[8]											|
-|	ENUM_PROTOCOL_GROUP_PEERLIST			Peercount[4] + onions[56*peercount] + ed25519_pk[56*peercount] { + invitations[64*peercount] }				|
+|	ENUM_PROTOCOL_GROUP_BROADCAST			crypto_box_SEALBYTES[48] + ( Salt[16] + Onion[56] + ed25519_pk[32] ) 							|
+|	ENUM_PROTOCOL_GROUP_PUBLIC_ENTRY_REQUEST	crypto_box_SEALBYTES[48] + ( Salt[16] + Onion[56] + ed25519_pk[32] ) 							|
 |	ENUM_PROTOCOL_GROUP_PRIVATE_ENTRY_REQUEST	Onion[56] + ed25519_pk[32] + Invitation[64] (invitation is signature of onion + pk by some invitor from group)		|
+|	ENUM_PROTOCOL_GROUP_REQUEST_PEERLIST		Peercount[4]														|
+|	ENUM_PROTOCOL_GROUP_PEERLIST			Peercount[4] + onions[56*peercount] + ed25519_pk[56*peercount] { + invitations[64*peercount] }				|
 |	ENUM_PROTOCOL_GROUP_OFFER			GROUP_ID[32] + Peercount[4] + invite_required[1]									|
 |	ENUM_PROTOCOL_GROUP_OFFER_FIRST			GROUP_ID[32] + Peercount[4] + invite_required[1] + Onion[56] + ed25519_pk[32] (to be signed by invitee)			|
 |	ENUM_PROTOCOL_GROUP_OFFER_ACCEPT		GROUP_ID[32] + Onion[56] + ed25519_pk[32] (to be signed by invitor)							|
 |	ENUM_PROTOCOL_GROUP_OFFER_ACCEPT_FIRST		GROUP_ID[32] + Onion[56] + ed25519_pk[32] + Invitation[64] (we sign invitor/group-creator's onion + pk)			|
 |	ENUM_PROTOCOL_GROUP_OFFER_ACCEPT_REPLY		GROUP_ID[32] + Onion[56] + ed25519_pk[32] + Invitation[64] + Invitation[64] (1st: new invite for them; 2nd: our invite)	|
-|	"other"						User generated data ('hey how are you?' etc)										|
+|	ENUM_PROTOCOL_PIPE_AUTH				Onion[56]														|
+|	ENUM_PROTOCOL_PROPOSE_UPGRADE			protocol_version[2]													|
+|	ENUM_PROTOCOL_KILL_CODE				NULL[0]															|
+|	ENUM_PROTOCOL_UTF8_TEXT				User generated data ('hey how are you?' etc)										|
+|	ENUM_PROTOCOL_UTF8_TEXT_DATE_SIGNED		User generated data ('hey how are you?' etc)										|
+|	ENUM_PROTOCOL_UTF8_TEXT_PRIVATE			User generated data ('hey how are you?' etc)										|
+|	"other"						UI developers can register their own text/binary/stream protocols with the protocol_registration function		|
 |_______________________________________________________________________________________________________________________________________________________________________________|
 		<pre>
 		<pre>
@@ -208,7 +225,7 @@ ________________________________________________________________________________
 |	Packet Len		[2] uint16_t		Unsigned, every packet.											|
 |	Protocol		[2] uint16_t		Unsigned, every packet.											|
 |	Truncated File Checksum	[4] unsigned char	Unsigned, every packet. To distingush between data from multiple files sent on the same connection.	|
-|	Start position		[8] uint64_t		Unsigned, every packet. 										|
+|	Start position		[8] uint64_t		Unsigned, every packet. Offset from the start of the file.						|
 |	Data			(up to packet size)	Unsigned, every packet.	Up to PACKET_SIZE_MAX - 16 (sum of above bytes) of data				|
 |_______________________________________________________________________________________________________________________________________________________________|
 		</pre>
