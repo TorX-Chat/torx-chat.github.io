@@ -87,15 +87,14 @@
 			<ul>
 				<li>Spagetti Code: Audit message_prep && message_distribute</li>
 			</ul> -->
-			<li>Cleanup / remove old TODO notes at the top of torx_core.c</li>
-			<li>libevent.c: Review accept_conn, error_conn, close_conn, loop exit</li>
+		<!--	<li>libevent.c: Review accept_conn, error_conn, close_conn, loop exit</li> -->
+			<li>There is a race condition caused by send_prep being called multiple times on the same message. Reducing cascades and socket swapping is insufficient to fix it. Either peer specific mutex needs to wrap send_prep, or we need to make a 4th stat called ENUM_MESSAGE_QUEUED for when messages are in the packet struct.</li>
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len)</li>
 			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
 			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc</li>
 			<li>Invites need to be one-time-use (they are not) and non-transferrable (i presume they are non-transferrable, but check). ENUM_GROUP_OFFER_ACCEPT_REPLY always signs / issues an invitation... is this a problem? if ENUM_GROUP_OFFER_ACCEPT_REPLY is utilized during every handshake then its a problem because not just the inviter will sign but everyone... meaning that people can spoof who actually invited them.</li>
 			<li>To reveal 1300+ thread-unsafe reads, remove -Wno-unsafe-buffer-usage from CMakeLists.txt</li>
-			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
-			<li>!v3auth is no longer considered safe. Appears to be operating full duplex. If !v3auth, must utilize auth pipes. Then we can tear out some legacy code and perhaps ENUM_PROPOSE_UPGRADE, which is not well tested. Need to test with an old Tor binary.</li>
+			<li>!v3auth is no longer considered safe. Appears to be operating full duplex. If !v3auth, must utilize auth pipes. Then we can tear out some legacy code and perhaps ENUM_PROPOSE_UPGRADE, which is not well tested. Need to test with an old Tor binary. Alternatively, just rip out all depreciated code and refuse to run with outdated Tor binaries.</li>
 			<li>kill_delete == 0 --> 'Block' and MUST (currently does not!) change the priv/onion/peeronion to some fakes, but retain message data and name. Could set it to generate legitimate fakes, or invalid ones. Then call sql_update_peer(n)</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping). Minor notice for incomplete, major for invalid + counter. Warning: After a file is cancelled, a peer can keep sending data or re-start sending data and we receive/disgard it. This could be exploited to monitor a peer. Need to somehow notify a peer that such packets are still inbound.</li>
 			<li>It is likely possible to send an ACCEPT on a modified-since-offered file from long ago that the sender still has the path of in their log history. Transfer will fail checksum verification upon receipt, but could be exploitable for exfiltrating unintended data. Should at least verify modification times (and do a checksum if failing) before sending data.</li>
@@ -109,8 +108,8 @@
 			<li>Build on Windows: poll() needs replacing, read() needs wrapper function.</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
 			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
-			<li>Bug: Private messages are not full duplex? (seems not sending on orange/recvfd)</li>
-			<li>save_dir_always_ask should be eliminated in GTK4, in favor of download_dir. GTK4/Flutter should have a set/unset + directory picker</li>
+			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
+			<li>save_dir_always_ask should be eliminated in GTK4, in favor of download_dir. GTK4/Flutter should have a set/unset + directory picker for download_dir.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
 			<li>Consider moving the message size and protocol behind the .message pointer (so we can avoid copying moving message when signing)</li>
 			<li>Implement _from_i functions in Gtk/Lib</li>
@@ -164,7 +163,7 @@
 	<section id="ui">
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<ul>
-			<li>"Delete Logs" --> "Clear Logs"</li>
+			<li>Should run a checksum after receiving sticker data</li>
 			<li>Expose save_all_stickers toggle</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>Have a tooltip that shows TorX-IDs, at least on the group's peerlist</li>
