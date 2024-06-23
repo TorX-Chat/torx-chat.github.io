@@ -83,15 +83,8 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-		<!--	<li>2024/04/26: Group PM messages are STILL going to the wrong person sometimes. Cause is unknown. Displays as "fail" with right recipient name, but the wrong person receives it.</li>
-			<ul>
-				<li>Spagetti Code: Audit message_prep && message_distribute</li>
-			</ul> -->
-		<!--	<li>libevent.c: Review accept_conn, error_conn, close_conn, loop exit</li> -->
-			<li>There is a race condition caused by send_prep being called multiple times on the same message. Reducing cascades and socket swapping is insufficient to fix it. Either peer specific mutex needs to wrap send_prep, or we need to make a 4th stat called ENUM_MESSAGE_QUEUED for when messages are in the packet struct.</li>
-			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len)</li>
+			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
 			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
-			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc</li>
 			<li>Invites need to be one-time-use (they are not) and non-transferrable (i presume they are non-transferrable, but check). ENUM_GROUP_OFFER_ACCEPT_REPLY always signs / issues an invitation... is this a problem? if ENUM_GROUP_OFFER_ACCEPT_REPLY is utilized during every handshake then its a problem because not just the inviter will sign but everyone... meaning that people can spoof who actually invited them.</li>
 			<li>To reveal 1300+ thread-unsafe reads, remove -Wno-unsafe-buffer-usage from CMakeLists.txt</li>
 			<li>!v3auth is no longer considered safe. Appears to be operating full duplex. If !v3auth, must utilize auth pipes. Then we can tear out some legacy code and perhaps ENUM_PROPOSE_UPGRADE, which is not well tested. Need to test with an old Tor binary. Alternatively, just rip out all depreciated code and refuse to run with outdated Tor binaries.</li>
@@ -127,6 +120,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Where multiple getter functions occur in a block, it would be more efficient to manually lock/unlock once.</li>
 			<li>Could allow protocols to require an acknowledgement of by sending a checksum back. Using a checksum is more CPU intensive than ideal but ensures the completeness of the message and does not require both sides to keep a shared index number of any type.</li>
 			<li>get_tor_version should probably be called again if a new Tor binary is selected, which means it needs locks too.</li>
 			<li>Consider implementation of Proof of Work https://spec.torproject.org/hspow-spec/v1-equix.html for multiple use IDs, when sufficiently mature</li>
@@ -184,7 +178,11 @@
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
 		<ul>
+			<li>File offers need to be deletable</li>
+			<li>File offer needs to rebuild (to show image preview) after successful transfer</li>
+			<li>Factories in GTK4 are horribly inefficient. Need to work around their inefficiencies.</li>
 			<li>After unhiding from torx-tray, latest messages are not visible, if a current chat is open.</li>
+			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Scroll direction is inverted, which is annoying but is preferable to not using INVERSION_TEST</li>
