@@ -200,6 +200,7 @@
 			<li>Lifecycle: Notifications may have to handled by callbacks written in Java/Kotlin to prevent their disposal during lifecycle events. Singleton was attempted, but didn't help.</li>
 			<li>Lifecycle: RestorationScopeId seems to not be saving our route. Unsure if it saves anything. If we can get it to work, we can use restorationId on TextField and ScrollView (note: security implications of saving to disk in cleartext)</li>
 			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
+			<li>Isolates: showsUserInterface should be false, but we can't get it to work. Seems like few if any have (seems like they only use it with cancelNotification): https://github.com/search?q=%22showsUserInterface%3A+false%22&type=code with the only exception being here: https://github.com/jenspfahl/EverydayTasks/blob/a85475deae37649ba8ef18978e19270e3ba7ebb6/lib/ui/pages/ScheduledTaskList.dart#L977 Note: If we re-write our notifications (and perhaps callbacks) in native code for better lifecycle management, this issue would be irrelevant.</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
