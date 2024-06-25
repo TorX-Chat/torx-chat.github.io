@@ -30,7 +30,6 @@
 	</style>
 </head>
 <body>
-
 	<nav>
 		<a href="index.html">Home</a>
 		<a href="#schedule">Schedule</a>
@@ -139,7 +138,6 @@
 			<li>Add a counter or bunch of counters that increment every time a malloc occurs, so we can know how many leaks we got. (optionally in what areas)</li>
 			<li>Public Groups could hypothetically also be shortened in length (pointless), or allow external generation (pointless)</li>
 			<li>Consider having UTF8 validator shift forward over any non-utf8 bytes, for use in libevent.c and perhaps message_send (to avoid sql issues), rather than discarding whole messages.</li>
-		<!--	<li>Consider replacing fork() exec() with posix_spawn()</li> -->
 			<li>For GROUP_PEER, .message and .message_len could be double pointer + pointer, respectively. Unsure if viable and how we would re-structure our message struct for that. This can be ignored for now so long as we aren't having bugs.</li>
 			<li>Consider ripping out libsodium and replacing it with with openssl (since it is already a tor dependency) or libressl. Be sure that we can do everything in onion_gen.c (ex: crypto_sign_ed25519_pk_to_curve25519)</li>
 		</ul>
@@ -178,15 +176,13 @@
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
 		<ul>
-			<li>File offers need to be deletable</li>
-			<li>File offer needs to rebuild (to show image preview) after successful transfer</li>
 			<li>Factories in GTK4 are horribly inefficient. Need to work around their inefficiencies.</li>
 			<li>After unhiding from torx-tray, latest messages are not visible, if a current chat is open.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Scroll direction is inverted, which is annoying but is preferable to not using INVERSION_TEST</li>
-			<li>Images should be clickable (to show larger), should automatically render after reaching 100% transferred (inbound).</li>
+			<li>Images should be clickable (to show larger).</li>
 			<li>Implement _from_i functions in Gtk/Lib</li>
 			<li>Threadsafety: we have a lot of places where we retrieve pointer locations with locks and then read them without locks. In the vast majority of cases, this will never be a problem, but we should implement getter_string and _from_i for these cases to eliminate the data race warnings, despite the performance implications. (ctrl+f &mutex_ and torx_unlock, replace with getter_string / _from_i functions)</li>
 			<li>GStreamer or PortAudio library ( https://github.com/PortAudio/portaudio ) to record .wav type audio for voice messages / streaming chat / walkie mode. Notes elsewhere suggest Vorbis being preferable for streamed audio.</li>
@@ -201,7 +197,9 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
-			<li>Lifecycle: Notifications should be handled by the persistant notification so that the relevant callback functions are not disposed of when swiping application away. If this is insufficient, relevent callbacks and notifications need to be written in Java/Kotlin.</li>
+			<li>Lifecycle: Notifications may have to handled by callbacks written in Java/Kotlin to prevent their disposal during lifecycle events. Singleton was attempted, but didn't help.</li>
+			<li>Lifecycle: RestorationScopeId seems to not be saving our route. Unsure if it saves anything. If we can get it to work, we can use restorationId on TextField and ScrollView (note: security implications of saving to disk in cleartext)</li>
+			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
