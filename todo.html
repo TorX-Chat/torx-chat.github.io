@@ -94,6 +94,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>show_log_messages should be reduced and the relevant bugs worked out. For group related bugs, perhaps we need to load GROUP_CTRL first, then reset and load the rest. However there will be problems because when loading by message number instead of message time, we won't necessarily be able to match up messages in GROUP_PEER with their respective GROUP_CTRL, when there are private messages etc that go inbetween.</li>
 			<li>which() should fallback to looking in current directory, if path fails</li>
 			<li>CMakeLists.txt: set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 			<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
@@ -210,7 +211,6 @@
 				<li>Allow forcing of rebuilds for when deps change? CMake can ideally handle this</li>
 			</ul>
 			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
-			<li>Can we onload and offload message history? Keep last 50 messages of every peer, but dump the rest to save RAM?</li>
 			<li>Calling peer_accept() while actively modifying peernick results in modifications being lost</li>
 			<li>autoRunOnBoot: true (foreground task) + fix BootBroadcastReceiver.kt, then have a toggle in settings page for both.</li>
 			<li>Consider requesting battery optimization exemption</li>
