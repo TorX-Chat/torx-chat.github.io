@@ -178,8 +178,11 @@
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
 		<ul>
-			<li>Factories in GTK4 are horribly inefficient. Need to work around their inefficiencies.</li>
+			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
+			<li>Partially mitigated by GTK_FACTORY_BUG=1: Loading chats is horribly slow until gtk_list_base_set_anchor_max_widgets stops being passed GTK_LIST_VIEW_MAX_LIST_ITEMS as n_center, because it builds 205 widgets.</li>
+			<li>INVERSION_TEST is necessary until https://gitlab.gnome.org/GNOME/gtk/-/issues/4680 gets resolved</li>
 			<li>After unhiding from torx-tray, latest messages are not visible, if a current chat is open.</li>
+			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
@@ -201,6 +204,7 @@
 		<ul>
 			<li>Lifecycle: Notifications may have to handled by callbacks written in Java/Kotlin to prevent their disposal during lifecycle events. Singleton was attempted, but didn't help.</li>
 			<li>Lifecycle: RestorationScopeId seems to not be saving our route. Unsure if it saves anything. If we can get it to work, we can use restorationId on TextField and ScrollView (note: security implications of saving to disk in cleartext)</li>
+			<li>Lifecycle needs a full audit, including use of restorationScopeId, initialization_functions(), resumptionTasks()</li>
 			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
 			<li>Isolates: showsUserInterface should be false, but we can't get it to work. Seems like few if any have (seems like they only use it with cancelNotification): https://github.com/search?q=%22showsUserInterface%3A+false%22&type=code with the only exception being here: https://github.com/jenspfahl/EverydayTasks/blob/a85475deae37649ba8ef18978e19270e3ba7ebb6/lib/ui/pages/ScheduledTaskList.dart#L977 Note: If we re-write our notifications (and perhaps callbacks) in native code for better lifecycle management, this issue would be irrelevant.</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
