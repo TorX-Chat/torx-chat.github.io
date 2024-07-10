@@ -160,6 +160,7 @@
 			<li>Should run a checksum after receiving sticker data</li>
 			<li>Expose save_all_stickers toggle</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
+			<li>Implement .SVG buttons instead of .PNG, and colorize.</li>
 			<li>Have a tooltip that shows TorX-IDs, at least on the group's peerlist</li>
 			<li>Need to implement our fancy new .SVG icons (can wait for GTK4.14)</li>
 			<li>Flash entry box red when no nick is entered for generating (generate_onion) or adding onion (save_peer), or when an invalid onion is passed (bad checksum)</li>
@@ -219,7 +220,6 @@
 			<li>Calling peer_accept() while actively modifying peernick results in modifications being lost</li>
 			<li>autoRunOnBoot: true (foreground task) + fix BootBroadcastReceiver.kt, then have a toggle in settings page for both.</li>
 			<li>Consider requesting battery optimization exemption</li>
-			<li>AnimatedBuilder should replace many of our setState calls, for efficiency. Especially: activity button, and send/sticker/attach builds</li>
 			<li>Should use gallery with photo_view to allow swipping back/forward to see other images in PhotoView.</li>
 			<li>Can't change app name on the fly, but can change icon. Could use it to notify user of messages or put alternate icon option (calculator, or something people never use). "The calculator theoretically opens chat but it doesn't work anymore. They said it requires entering a specific calculation," Micay said.</li>
 			<li>Prevent un-encrypted backups of android data? Most chat apps do this but I'm on the fence because our data is encrypted, and we do want to support history migration. GrapheneOS project has some info that suggests we can block only unencrypted backups.</li>
@@ -230,6 +230,7 @@
 			<li>Experiment in Noti with grouping notifications per-user.</li>
 			<li>Comment out any unused color and language strings. Ensure that we don't have any strings not in our languages file.</li>
 			<li>Message box height: 400 is too tall. Figure out a way to avoid hard coding it.</li>
+			<li>AnimatedBuilder should replace most or all remaining of our setState calls, for efficiency. There are few left.</li>
 			<li>We lose TorX log and Tor log contents every time we .detach, so we might consider to store it in a library defined C pointer so it stays in RAM. We would just need to create the pointer in lib and the remaining work is done in flutter. However, this is kind of contrary to the direction we are going, which is to be able to minimize RAM usage in Android.</li>
 		</ul>
 </body>
