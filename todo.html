@@ -136,7 +136,6 @@
 			<li>Multiple offers of the same file to the same peer is undefined behavior, especially when changing filename. Test it.</li>
 			<li>Lots of warnings occur when restarting Tor.</li>
 			<li>Cascade deletion of messages and peer specific settings may be untested</li>
-			<li>atoi() should be replaced by strtoll(arg, NULL, 10); It sends invalid input to null and returns 0 if bad input.</li>
 			<li>We don't have library protection against running twice. We implement "running" check in GTK. For now, this is ideal. No reason to change this.</li>
 			<li>Is --keygen/--key-expiration only for relays? OfflineMasterKey/SigningKeyLifetime</li>
 			<li>man atexit. May be useful. Note: Doesn't trigger on signals (ie ctrl + c). Not sure why this would be useful since we handle all exit() calls.</li>
