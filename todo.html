@@ -86,7 +86,6 @@
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
 			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
 			<li>Invites need to be one-time-use (they are not) and non-transferrable (I presume they are non-transferrable, but check). ENUM_GROUP_OFFER_ACCEPT_REPLY always signs / issues an invitation... is this a problem? if ENUM_GROUP_OFFER_ACCEPT_REPLY is utilized during every handshake then its a problem because not just the inviter will sign but everyone... meaning that people can spoof who actually invited them.</li>
-			<li>!v3auth is no longer considered safe. Appears to be operating full duplex. If !v3auth, must utilize auth pipes. Then we can tear out some legacy code and perhaps ENUM_PROPOSE_UPGRADE, which is not well tested. Need to test with an old Tor binary. Alternatively, just rip out all depreciated code and refuse to run with outdated Tor binaries.</li>
 			<li>kill_delete == 0 --> 'Block' and MUST (currently does not!) change the priv/onion/peeronion to some fakes, but retain message data and name. Could set it to generate legitimate fakes, or invalid ones. Then call sql_update_peer(n)</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping). Minor notice for incomplete, major for invalid + counter. Warning: After a file is cancelled, a peer can keep sending data or re-start sending data and we receive/disgard it. This could be exploited to monitor a peer. Need to somehow notify a peer that such packets are still inbound.</li>
 			<li>It is likely possible to send an ACCEPT on a modified-since-offered file from long ago that the sender still has the path of in their log history. Transfer will fail checksum verification upon receipt, but could be exploitable for exfiltrating unintended data. Should at least verify modification times (and do a checksum if failing) before sending data.</li>
@@ -94,15 +93,27 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>show_log_messages should be reduced and the relevant bugs worked out.
+			<li>show_log_messages should be reduced and the relevant bugs worked out.</li>
 			<ul>
 				<li>For group related bugs, perhaps we need to load GROUP_CTRL first, then reset and load the rest.</li>
 				<li>However there will be problems because when loading by message number instead of message time, we won't necessarily be able to match up messages in GROUP_PEER with their respective GROUP_CTRL, when there are private messages etc that go inbetween.</li>
 			</ul>
+			<li>PROPOSE_UPGRADE:</li>
+			<ul>
+				<li>After acting on a PROPOSE_UPGRADE, a restart is required before v3auth will be implemented. This can be resolved.</li>
+				<li>Currently we PROPOSE_UPGRADE on every connection. We can avoid that if we store the current value of the connection and not just peerversion.</li>
+			</ul>
+			<li>CMakeLists.txt:</li>
+			<ul>
+				<li>set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
+				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
+			</ul>
+			<li>Build on Windows:</li>
+			<ul>
+				<li>poll() needs replacing</li>
+				<li>read() needs wrapper function</li>
+			</ul>
 			<li>which() should fallback to looking in current directory, if path fails</li>
-			<li>CMakeLists.txt: set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
-			<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
-			<li>Build on Windows: poll() needs replacing, read() needs wrapper function.</li>
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
 			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
@@ -112,21 +123,22 @@
 			<li>Implement _from_i functions in Gtk/Lib</li>
 			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev</li>
 			<li>GROUP FILE TRANSFER Documentation: Outbound uses peer_n fd for disk reads, Inbound uses group_ctrl fd for disk writes. When receiving file request, it appears we store outbound date in the group_peer_n. This needs to be documented/understood. When changing file status in process_pause_cancel, we might need to iterate through the relevant group_peer_n and set their status too? idk if we store status there or only transfer amount.</li>
-			<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li>
 			<li>We can't support uint64_t file sizes because ftell/fseek only support long int. Unsure what to do about this. It affects our file transfer protocols.</li>
 			<li>accept_automatically. Can either be a toggle or a size slider. size_t is probably most logical. Could also have a list of accepted filetypes. NOTE: Enabling this option will require a check for download_dir. Also, this option should could be DANGEROUS for insecure platforms like Windows/OSX/iOS/Android, where CSAM scanning exists.</li>
 			<li>If a split_folder exists, files inside should be labelled via truncated checksum rather than filename.</li>
 			<li>Hash is written to disk in plaintext for our .split file. Perhaps we should encrypt (no) or salt + rehash it (not all hashes, just this hash written to .split file). The reason we don't is because the file itself is written next to it, so what is the security in having the hash salted? We do attempt to securely delete .split files.</li>
-			<li>Requesting a 1 byte file in full duplex causes an integer overflow / request of a 18446744073709551615 byte file, causing offerer to crash *** Need a sanity check that requests are not > file size</li>
+			<li>Requesting a 1 byte file in full duplex causes an integer overflow / request of a 18446744073709551615 byte file, causing offerer to crash. Need a sanity check that requests are not > file size</li>
 			<li>Sodium memory management overhead: Check for compile-time flags that could disable the wasted pages except on debug builds. sodium_malloc() wastes too much memory by allocating 4kb of space for each malloc. See <a href="https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c">HAVE_PAGE_PROTECTION</a></li>
 			<li>iOS (Orbot) / System Tor: We need to re-write tor_call so that all calls are on a single connection and ADD_ONION does not utilize "Detached". See Tor's control-spec.txt. That will enable us to run safely without control_password. However it will not achieve Orbot compatibility at least on Android (which starts up with a random CTRL_PORT). We could work with their devs to get them to resolve the issue.</li>
+			<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li>
 			<li>Clean up error messages / notices / checkpoints using macro defined levels to determine whether debug level + whether they contain sensitive info.</li>
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Documentation: As of 2.0.10, PIPE_AUTH is signed and utilized when v3auth is not available (Tor <0.4.6.1) to facilitate secure full-duplex connections.</li>
+			<li>Documentation: PROPOSE_UPGRADE works for ugprades from v1 (PIPE_AUTH) to v2 (v3auth), but cannot facilitate downgrades (and for many reasons should/will never). However, if both peers upgrade then disable v3auth, it will successfully fall back to PIPE_AUTH.</li>
 			<li>Where multiple getter functions occur in a block, it would be more efficient to manually lock/unlock once.</li>
-			<li>Could allow protocols to require an acknowledgement of by sending a checksum back. Using a checksum is more CPU intensive than ideal but ensures the completeness of the message and does not require both sides to keep a shared index number of any type.</li>
-			<li>get_tor_version should probably be called again if a new Tor binary is selected, which means it needs locks too.</li>
+			<li>Could allow protocols to require an acknowledgement of receipt by sending a checksum back. Using a checksum is more CPU intensive than ideal but ensures the completeness of the message and does not require both sides to keep a shared index number of any type.</li>
 			<li>Consider implementation of Proof of Work https://spec.torproject.org/hspow-spec/v1-equix.html for multiple use IDs, when sufficiently mature</li>
 			<li>Convert or eliminate remaining ~100 printf to error_printf</li>
 			<li>Takedown_onion must call disconnect_forever in a threadsafe manner. We've tried everything (evbuffer_lock, event_base_once, etc) and can't find a way.</li>
