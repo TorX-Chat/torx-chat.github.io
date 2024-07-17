@@ -85,7 +85,15 @@
 			<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues. We should probably resize the struct (down) when we delete message history.</li>
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
 			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
-			<li>Callback for invalid or incomplete message (which could be illict attempts to ping). Minor notice for incomplete, major for invalid + counter. Warning: After a file is cancelled, a peer can keep sending data or re-start sending data and we receive/disgard it. This could be exploited to monitor a peer. Need to somehow notify a peer that such packets are still inbound.</li>
+			<li>Callback for invalid or incomplete message (which could be illict attempts to ping or do traffic analysis).</li>
+			<ul>
+				<li>Minor notice for incomplete, major for invalid + counter.</li>
+				<li>Warning: After a file is cancelled, a peer can keep sending data or re-start sending data and we receive/disgard it. This could be exploited to monitor a peer.</li>
+				<li>Need to somehow notify a peer that such packets are still inbound.</li>
+				<li>Issue: Incomplete messages come in frequently in normal operation (faster than a monitor's framerate)</li>
+				<li>Issue: Invalid messages could come *incredibly* infrequently, if a malicious peer (ie, a peer could report a 1000 GB message and send it over weeks, never triggering an 'invalid' warning).</li>
+				<li>Thought: Invalid messages already report errors, so do we *really* need redundant callback, which has very little legitimate value?</li>
+			</ul>
 			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
