@@ -84,7 +84,6 @@
 		<ul>
 			<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues. We should probably resize the struct (down) when we delete message history.</li>
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
-			<li>Threadsafety: Certain pointers such as peer[n].message[i].message could be subject to race conditions in limited circumstances (ie, if it were to be modified at the same time it is being saved), which is unlikely. The circumstances that could cause this occur where it is passed to a function without wrapping the function in torx_read/torx_unlock. Currently we just pass tmp_message, which is a copy of the message location. This issue also exists in GTK4. Solution: implement getter_string / _from_i</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping or do traffic analysis).</li>
 			<ul>
 				<li>Minor notice for incomplete, major for invalid + counter.</li>
@@ -125,7 +124,6 @@
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
 			<li>Consider moving the message size and protocol behind the .message pointer (so we can avoid copying moving message when signing)</li>
-			<li>Implement _from_i functions in Gtk/Lib</li>
 			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev</li>
 			<li>GROUP FILE TRANSFER Documentation: Outbound uses peer_n fd for disk reads, Inbound uses group_ctrl fd for disk writes. When receiving file request, it appears we store outbound date in the group_peer_n. This needs to be documented/understood. When changing file status in process_pause_cancel, we might need to iterate through the relevant group_peer_n and set their status too? idk if we store status there or only transfer amount.</li>
 			<li>We can't support uint64_t file sizes because ftell/fseek only support long int. Unsure what to do about this. It affects our file transfer protocols.</li>
@@ -202,6 +200,7 @@
 			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
 			<li>Partially mitigated by GTK_FACTORY_BUG=1: Loading chats is horribly slow until gtk_list_base_set_anchor_max_widgets stops being passed GTK_LIST_VIEW_MAX_LIST_ITEMS as n_center, because it builds 205 widgets.</li>
 			<li>INVERSION_TEST is necessary until https://gitlab.gnome.org/GNOME/gtk/-/issues/4680 gets resolved</li>
+			<li>Drag and drop file transfers</li>
 			<li>After unhiding from torx-tray, latest messages are not visible, if a current chat is open.</li>
 			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
@@ -209,8 +208,6 @@
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Scroll direction is inverted, which is annoying but is preferable to not using INVERSION_TEST</li>
 			<li>Images should be clickable (to show larger).</li>
-			<li>Implement _from_i functions in Gtk/Lib</li>
-			<li>Threadsafety: we have a lot of places where we retrieve pointer locations with locks and then read them without locks. In the vast majority of cases, this will never be a problem, but we should implement getter_string and _from_i for these cases to eliminate the data race warnings, despite the performance implications. (ctrl+f &mutex_ and torx_unlock, replace with getter_string / _from_i functions)</li>
 			<li>GStreamer or PortAudio library ( https://github.com/PortAudio/portaudio ) to record .wav type audio for voice messages / streaming chat / walkie mode. Notes elsewhere suggest Vorbis being preferable for streamed audio.</li>
 			<li>Review any _swapped( and instead set proper args for given ::signal) (note: if signal can't be found in GTK docs, check gobject docs)</li>
 			<li>Have some clang specific compile flags. Could add more. See CMakeLists.txt.</li>
