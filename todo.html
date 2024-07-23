@@ -66,6 +66,7 @@
 		</ul>
 		<h4>For public discussion:</h4>
 		<ul>
+			<li>Putting in a "wrong" password could be made impossible. We could accept any password and just create a new config file. When unlocking, we could try the hashed password (decryption_key) against all config files.</li>
 			<li>Keyboard Privacy in Flutter being enabled by default: it breaks non-alphabetical languages such as Chinese</li>
 			<li>Git submodules vs ExternalProjects_Add vs other?</li>
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
@@ -112,10 +113,10 @@
 				<li>set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			</ul>
-			<li>Build on Windows:</li>
+			<li>Build on Windows needs testing:</li>
 			<ul>
-				<li>poll() needs replacing</li>
-				<li>read() needs wrapper function</li>
+				<li>poll() has been replaced</li>
+				<li>read() has been replaced</li>
 			</ul>
 			<li>which() should fallback to looking in current directory, if path fails</li>
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
