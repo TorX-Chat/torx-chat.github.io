@@ -66,6 +66,7 @@
 		</ul>
 		<h4>For public discussion:</h4>
 		<ul>
+			<li>Be able to drag messages / completed files to other peers? Accidents could occur. Another option is "Forward to".</li>
 			<li>Putting in a "wrong" password could be made impossible. We could accept any password and just create a new config file. When unlocking, we could try the hashed password (decryption_key) against all config files.</li>
 			<li>Keyboard Privacy in Flutter being enabled by default: it breaks non-alphabetical languages such as Chinese</li>
 			<li>Git submodules vs ExternalProjects_Add vs other?</li>
@@ -118,7 +119,6 @@
 				<li>poll() has been replaced</li>
 				<li>read() has been replaced</li>
 			</ul>
-			<li>which() should fallback to looking in current directory, if path fails</li>
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
 			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
@@ -201,20 +201,17 @@
 			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
 			<li>Partially mitigated by GTK_FACTORY_BUG=1: Loading chats is horribly slow until gtk_list_base_set_anchor_max_widgets stops being passed GTK_LIST_VIEW_MAX_LIST_ITEMS as n_center, because it builds 205 widgets.</li>
 			<li>INVERSION_TEST is necessary until https://gitlab.gnome.org/GNOME/gtk/-/issues/4680 gets resolved</li>
-			<li>Drag and drop file transfers</li>
-			<li>After unhiding from torx-tray, latest messages are not visible, if a current chat is open.</li>
+			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
 			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
-			<li>Scroll direction is inverted, which is annoying but is preferable to not using INVERSION_TEST</li>
 			<li>Images should be clickable (to show larger).</li>
 			<li>GStreamer or PortAudio library ( https://github.com/PortAudio/portaudio ) to record .wav type audio for voice messages / streaming chat / walkie mode. Notes elsewhere suggest Vorbis being preferable for streamed audio.</li>
 			<li>Review any _swapped( and instead set proper args for given ::signal) (note: if signal can't be found in GTK docs, check gobject docs)</li>
 			<li>Have some clang specific compile flags. Could add more. See CMakeLists.txt.</li>
-			<li>Memory leakage: Free memory. Eliminate memory leaks so that it can valgrind 0. g_object_free()? Unsure how to handle sensitive things.</li>
+			<li>Memory leakage: Free memory. Eliminate memory leaks so that it can valgrind 0. g_free, g_object_free(), etc Unsure how to handle sensitive things.</li>
 			<li>Vertical mode: consider putting Send button below the emoji and attach buttons, or simply hide buttons other than Send while typing (like Flutter client).</li>
-			<li>CTRL+Enter should create a newline instead of sending. Alternatively add a dropdown list of options for key macros for "Send". See function keypress()</li>
 			<li>Gnotification can't use gresource icon. We already worked around it by dropping a .png, but we also have a .png for our .desktop file. If we set icon_logo to NULL, the icon registered with DBUS by .desktop will be used.</li>
 			<li>Colored .svg icons will be available from GTK 4.14. Then search our code for gtk_symbolic_paintable_snapshot_symbolic, where we have an example implementation ready.</li>
 		</ul>
