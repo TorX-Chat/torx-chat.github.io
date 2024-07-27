@@ -84,7 +84,17 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues. We should probably resize the struct (down) when we delete message history.</li>
+			<li>output_cb reported message pos > message_len:</li>
+			<ul>
+				<li>32 > 0. Protocol: Sticker Request. Likely will corrupt message. Packet len was 40</li>
+				<li>494 > 0. Protocol: Sticker data. Likely will corrupt message. Packet len was 498</li>
+			</ul>
+			<li>File transfer checksums fail after combination of sender crashes, stickers, messages, multi-file transfers, etc. Need audit.</li>
+			<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues.</li>
+			<ul>
+				<li>We should probably resize the struct (down) when we delete message history, or</li>
+				<li>We should use a linked list for our messages (like we do with group messages), instead of an array of struct</li>
+			</ul>
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping or do traffic analysis).</li>
 			<ul>
