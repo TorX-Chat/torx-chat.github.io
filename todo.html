@@ -90,11 +90,21 @@
 				<li>494 > 0. Protocol: Sticker data. Likely will corrupt message. Packet len was 498</li>
 			</ul>
 			<li>File transfer checksums fail after combination of sender crashes, stickers, messages, multi-file transfers, etc. Need audit.</li>
-			<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues.</li>
+		<!--	<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues.</li>
 			<ul>
 				<li>We should probably resize the struct (down) when we delete message history, or</li>
 				<li>We should use a linked list for our messages (like we do with group messages), instead of an array of struct</li>
-			</ul>
+				<ul>
+					<li>With enough work, we could eliminate n,i,g,f by using linked lists</li>
+					<li>We would pass around abstracted structs for each peer/message/etc.</li>
+					<li>For indexing, we use msg_index_iter && msg_index. See group_list usage for example.</li>
+					<li>Pointer vs double pointer? How would we handle deletion/free?</li>
+					<ul>
+						<li>Without double pointers, we would just free everything and remove from linked list.</li>
+						<li>Any references would have to be removed, or problems would occur.</li>
+					</ul>
+				</ul>
+			</ul> -->
 			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping or do traffic analysis).</li>
 			<ul>
