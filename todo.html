@@ -84,6 +84,33 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Onloading/offloading old messages (show_log_messages + sql_populate_message + messages_loaded:</li>
+			<ul>
+				<li>1) Some (negative, reverse) file related messages are not being loaded by sql_populate message because of "logic error"</li>
+				<ul>
+					<li>We need to reverse the order of loading: use ASC instead of DESC, when reverse == 1</li>
+					<li>We need to count the number of messages we will be loading by calling sqlite3_step() in a loop then sqlite3_reset()</li>
+					<li>Pass an offset to load_messages_struc. Ex: We process via -20++ rather than -10--, with the precise start determined via offset. Note: This may require calling expand_messages_struct multiple times to make this offset available</li>
+					<li>We need the initial count to remain accurate, so sql_populate_message's main while loop and load_messages_struc must be no fail</li>
+					<li>If there is a logic fail, the message slot must be filled with p_iter == -1, or at the end of processing, any difference between initial count and final count must be filled with p_iter == -1</li>
+				</ul>
+				<li>2) Group Peer messages *must* be loaded to at least the time of the oldest loaded GROUP_CTRL message</li>
+				<ul>
+					<li>Public Public messages on GROUP_PEER *must NOT* be loaded beyond that point</li>
+					<li>Both load points need to be carefully tracked</li>
+					<li>Thought: Load PMs normally, ignoring public messages, and load public messages by time after loading GROUP_CTRL</li>
+				</ul>
+				<li>3) ui_load_more_messages --> sql_populate_message</li>
+				<ul>
+					<li>Does not trigger any callbacks. UI needs to handle printing the newly loaded messages.</li>
+					<li>Needs to call message_sort for groups (already done in GTK, though untested)</li>
+				</ul>
+				<li>4) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
+				<li>5) Cache / Re-loading / Merging cache:</li>
+				<ul>
+					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
+				</ul>
+			</ul>
 			<li>output_cb reported message pos > message_len:</li>
 			<ul>
 				<li>32 > 0. Protocol: Sticker Request. Likely will corrupt message. Packet len was 40</li>
