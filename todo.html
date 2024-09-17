@@ -50,7 +50,6 @@
 		<ul>
 			<li>Proper documentation of base protocols / handshake</li>
 			<li>Doxygen compatible documentation (?) at least for UI exposed library functions</li>
-			<li>Windows build</li>
 			<li>MacOS build</li>
 			<li>Library stability</li>
 		</ul>	
@@ -161,11 +160,6 @@
 				<li>set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			</ul>
-			<li>Build on Windows needs testing:</li>
-			<ul>
-				<li>poll() has been replaced</li>
-				<li>read() has been replaced</li>
-			</ul>
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
 			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
 			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
@@ -245,6 +239,15 @@
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
 		<ul>
+			<li>Windows build:</li>
+			<ul>
+				<li>Issue receiving/playing gif files: "Trying to snapshot (some widget type) without a current allocation"</li>
+				<li>Saving torrc results in warnings to override. Should complain to #tor if they persist.</li>
+				<li>Need to ship an installer or just zip up the files (if that is sufficient).</li>
+				<li>Need a "Microsoft code signing certificate"(?) to be able to distribute without warnings.</li>
+				<li>"Microsoft Store" listing should be considered.</li>
+				<li>Note for devs: torx-tray.exe may not die when TorX is abruptly killed (ex: ctrl+c in GDB) because TCP connections are not properly closed. Unavoidable without dropping a PID file, but this should only be an issue for devs who are repeatedly building in the same directory of execution (builds might fail on torx-tray.exe because it is running). This issue should not exist for users because multiple instances of torx-tray.exe can run concurrently.</li>
+			</ul>
 			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
 			<li>Partially mitigated by GTK_FACTORY_BUG=1: Loading chats is horribly slow until gtk_list_base_set_anchor_max_widgets stops being passed GTK_LIST_VIEW_MAX_LIST_ITEMS as n_center, because it builds 205 widgets.</li>
 			<li>INVERSION_TEST is necessary until https://gitlab.gnome.org/GNOME/gtk/-/issues/4680 gets resolved</li>
@@ -265,6 +268,7 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
+			<li>Tor transports (written in Go) need to be built and shipped: Lyrebird (replacing obfs4proxy?) && Conjure (really interesting)</li>
 			<li>Lifecycle: Notifications may have to handled by callbacks written in Java/Kotlin to prevent their disposal during lifecycle events. Singleton was attempted, but didn't help.</li>
 			<li>Lifecycle: RestorationScopeId seems to not be saving our route. Unsure if it saves anything. If we can get it to work, we can use restorationId on TextField and ScrollView (note: security implications of saving to disk in cleartext)</li>
 			<li>Lifecycle needs a full audit, including use of restorationScopeId, initialization_functions(), resumptionTasks()</li>
