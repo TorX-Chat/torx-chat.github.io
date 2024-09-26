@@ -83,29 +83,20 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Onloading/offloading old messages (show_log_messages + sql_populate_message + messages_loaded:</li>
+			<li>Onloading/offloading old messages (show_log_messages + sql_populate_message + messages_loaded):</li>
 			<ul>
-				<li>1) Some (negative, reverse) file related messages are not being loaded by sql_populate message because of "logic error"</li>
-				<ul>
-					<li>We need to reverse the order of loading: use ASC instead of DESC, when reverse == 1</li>
-					<li>We need to count the number of messages we will be loading by calling sqlite3_step() in a loop then sqlite3_reset()</li>
-					<li>Pass an offset to load_messages_struc. Ex: We process via -20++ rather than -10--, with the precise start determined via offset. Note: This may require calling expand_messages_struct multiple times to make this offset available</li>
-					<li>We need the initial count to remain accurate, so sql_populate_message's main while loop and load_messages_struc must be no fail</li>
-					<li>If there is a logic fail, the message slot must be filled with p_iter == -1, or at the end of processing, any difference between initial count and final count must be filled with p_iter == -1</li>
-				</ul>
-				<li>2) Group Peer messages *must* be loaded to at least the time of the oldest loaded GROUP_CTRL message</li>
+				<li>1) Group Peer messages *must* be loaded to at least the time of the oldest loaded GROUP_CTRL message</li>
 				<ul>
 					<li>Public Public messages on GROUP_PEER *must NOT* be loaded beyond that point</li>
 					<li>Both load points need to be carefully tracked</li>
 					<li>Thought: Load PMs normally, ignoring public messages, and load public messages by time after loading GROUP_CTRL</li>
 				</ul>
-				<li>3) ui_load_more_messages --> sql_populate_message</li>
+				<li>2) Deleting large amounts messages (~10+ or all) then sending/receiving a new message to/from the same peer causes crash.</li>
 				<ul>
-					<li>Does not trigger any callbacks. UI needs to handle printing the newly loaded messages.</li>
-					<li>Needs to call message_sort for groups (already done in GTK, though untested)</li>
+					<li>NOTE: may only apply when deleting i < 0 messages (those loaded via load_more_messages).</li>
 				</ul>
-				<li>4) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
-				<li>5) Cache / Re-loading / Merging cache:</li>
+				<li>3) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
+				<li>4) Cache / Re-loading / Merging cache:</li>
 				<ul>
 					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
 				</ul>
@@ -145,11 +136,6 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>show_log_messages should be reduced and the relevant bugs worked out.</li>
-			<ul>
-				<li>For group related bugs, perhaps we need to load GROUP_CTRL first, then reset and load the rest.</li>
-				<li>However there will be problems because when loading by message number instead of message time, we won't necessarily be able to match up messages in GROUP_PEER with their respective GROUP_CTRL, when there are private messages etc that go inbetween.</li>
-			</ul>
 			<li>PROPOSE_UPGRADE:</li>
 			<ul>
 				<li>After acting on a PROPOSE_UPGRADE, a restart is required before v3auth will be implemented. This can be resolved.</li>
@@ -239,6 +225,13 @@
 	<section id="gtk4">
 		<h3>TODO List for GTK4 client:</h3>
 		<ul>
+		<!--	<li>Efficiency:</li>
+		This is incorrect. message_builder is not called excessively, it seems? However, doing what is listed here could result in some improvement, just not as significant as stated.
+			<ul>
+				<li>When print_message has scroll==0, the IntPair should be cached in an array and later passed to g_list_store_splice when there is a scroll==1. This should prevent thousands of unnecessary calls to message_builder.</li>
+				<li>Likewise, when scroll==-1, it should also be cached until reaching min_i.</li>
+			</ul> -->
+			<li>t_main.global_pos and ].pos need to be analysed. Whether they are fully working or not is unknown. It's likely that adding messages from pos==0 is breaking every subsequent .pos, which likely needs to be modified (so, if we add 15 messages from 0, every other message with >0 ].pos needs to be +=15. For efficiency, this would be done in the functions that call print_message, not in print_message itself).</li>
 			<li>Windows build:</li>
 			<ul>
 				<li>Saving torrc results in warnings to override. Should complain to #tor if they persist.</li>
@@ -268,12 +261,14 @@
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
 			<li>Tor transports (written in Go) need to be built and shipped: Lyrebird (replacing obfs4proxy?) && Conjure (really interesting)</li>
+		<!--	<li>Crash: Occurs occassionally when application is in the background, especially when other high-RAM applications are running https://stackoverflow.com/questions/44425584/context-startforegroundservice-did-not-then-call-service-startforeground E/AndroidRuntime(12140): android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{52682ad u0 com.torx.chat/com.dexterous.flutterlocalnotifications.ForegroundService}</li>  -->
 			<li>Lifecycle: Notifications may have to handled by callbacks written in Java/Kotlin to prevent their disposal during lifecycle events. Singleton was attempted, but didn't help.</li>
 			<li>Lifecycle: RestorationScopeId seems to not be saving our route. Unsure if it saves anything. If we can get it to work, we can use restorationId on TextField and ScrollView (note: security implications of saving to disk in cleartext)</li>
 			<li>Lifecycle needs a full audit, including use of restorationScopeId, initialization_functions(), resumptionTasks()</li>
 			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
 			<li>Isolates: showsUserInterface should be false, but we can't get it to work. Seems like few if any have (seems like they only use it with cancelNotification): https://github.com/search?q=%22showsUserInterface%3A+false%22&type=code with the only exception being here: https://github.com/jenspfahl/EverydayTasks/blob/a85475deae37649ba8ef18978e19270e3ba7ebb6/lib/ui/pages/ScheduledTaskList.dart#L977 Note: If we re-write our notifications (and perhaps callbacks) in native code for better lifecycle management, this issue would be irrelevant.</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections.</li>
+			<li>Can we prevent other applications from knowing this application is installed?</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
 				<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
