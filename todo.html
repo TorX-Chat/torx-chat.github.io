@@ -83,23 +83,9 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Onloading/offloading old messages (show_log_messages + sql_populate_message + messages_loaded):</li>
+			<li>Deleting large amounts messages (~10+ or all) then sending/receiving a new message to/from the same peer causes crash.</li>
 			<ul>
-				<li>1) Group Peer messages *must* be loaded to at least the time of the oldest loaded GROUP_CTRL message</li>
-				<ul>
-					<li>Public Public messages on GROUP_PEER *must NOT* be loaded beyond that point</li>
-					<li>Both load points need to be carefully tracked</li>
-					<li>Thought: Load PMs normally, ignoring public messages, and load public messages by time after loading GROUP_CTRL</li>
-				</ul>
-				<li>2) Deleting large amounts messages (~10+ or all) then sending/receiving a new message to/from the same peer causes crash.</li>
-				<ul>
-					<li>NOTE: may only apply when deleting i < 0 messages (those loaded via load_more_messages).</li>
-				</ul>
-				<li>3) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
-				<li>4) Cache / Re-loading / Merging cache:</li>
-				<ul>
-					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
-				</ul>
+				<li>NOTE: may only apply when deleting i < 0 messages (those loaded via load_more_messages).</li>
 			</ul>
 			<li>output_cb reported message pos > message_len:</li>
 			<ul>
@@ -166,6 +152,14 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Onloading/offloading old messages:</li>
+			<ul>
+				<li>1) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
+				<li>2) Cache / Re-loading / Merging cache:</li>
+				<ul>
+					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
+				</ul>
+			</ul>
 			<li>Support for 0 length messages was removed at some point. This is an artificial limitation that didn't always exist.</li>
 			<li>Documentation: As of 2.0.10, PIPE_AUTH is signed and utilized when v3auth is not available (Tor <0.4.6.1) to facilitate secure full-duplex connections.</li>
 			<li>Documentation: PROPOSE_UPGRADE works for ugprades from v1 (PIPE_AUTH) to v2 (v3auth), but cannot facilitate downgrades (and for many reasons should/will never). However, if both peers upgrade then disable v3auth, it will successfully fall back to PIPE_AUTH.</li>
