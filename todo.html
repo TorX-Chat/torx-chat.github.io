@@ -254,6 +254,7 @@
 	<section id="flutter">
 		<h3>TODO List for Flutter client:</h3>
 		<ul>
+			<li>Flutter CmakeLists.text: If jnilibs is populated with files, don't try to copy output binaries into jnilibs because if deleted the build dir and rebuilt a release only, it will be empty</li>
 			<li>Tor transports (written in Go) need to be built and shipped: Lyrebird (replacing obfs4proxy?) && Conjure (really interesting)</li>
 		<!--	<li>Crash: Occurs occassionally when application is in the background, especially when other high-RAM applications are running https://stackoverflow.com/questions/44425584/context-startforegroundservice-did-not-then-call-service-startforeground E/AndroidRuntime(12140): android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{52682ad u0 com.torx.chat/com.dexterous.flutterlocalnotifications.ForegroundService}</li>  -->
 			<li>Lifecycle: Notifications may have to handled by callbacks written in Java/Kotlin to prevent their disposal during lifecycle events. Singleton was attempted, but didn't help.</li>
