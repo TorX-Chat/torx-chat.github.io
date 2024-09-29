@@ -133,8 +133,6 @@
 				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			</ul>
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
-			<li>Bug: Repeated blocking/unblocking of a peer causes crashes.</li>
-			<li>Bug: Deleting of multiple PEER (sing/mult) causes crashes.</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
 			<li>Consider moving the message size and protocol behind the .message pointer (so we can avoid copying moving message when signing)</li>
