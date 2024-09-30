@@ -131,6 +131,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>"Include the system error text (from perror or equivalent) in every error message resulting from a failing system call" https://www.gnu.org/prep/standards/html_node/Semantics.html</li>
 			<li>Onloading/offloading old messages:</li>
 			<ul>
 				<li>1) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
@@ -195,9 +196,7 @@
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Should run a checksum after receiving sticker data</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
-			<li>Expose save_all_stickers toggle</li>
 			<li>String functions in UI should use secure allocators/de-allocators, if possible. (Note: not possible?)</li>
 			<li>Voice notes && Walkie mode</li>
 		</ul>
@@ -228,11 +227,11 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>t_main.global_pos and ].pos need to be analysed. Whether they are fully working or not is unknown. It's likely that adding messages from pos==0 is breaking every subsequent .pos, which likely needs to be modified (so, if we add 15 messages from 0, every other message with >0 ].pos needs to be +=15. For efficiency, this would be done in the functions that call print_message, not in print_message itself).</li>
+			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
 			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
-			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Create .rpm file + RedHat repo</li>
 			<li>Create .??? file + MacOS brew.sh repo</li> <!-- ??? librewolf is on brew -->
