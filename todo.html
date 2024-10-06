@@ -101,7 +101,6 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>Peernick needs to be stored in the heap, with unlimited length. UI developers should be responsible for deciding arbitrary length limits.</li>
 			<li>Multiple offers of the same file to the same peer is undefined behavior, especially when changing filename. Test it.</li>
 			<li>PROPOSE_UPGRADE:</li>
 			<ul>
@@ -202,6 +201,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Test and document "Stealth addresses". Facilitated by peer_save(), "Stealth Addresses" functionality is where invalid (non-base32) and excessive (beyond 51 characters) characters are stripped. To utilize, take a 51(?) length TorX-ID, sprinkle invalid characters throughout it as desired, add unlimited length suffix trailing it, and then pass to peer_save. Note: cannot be exactly 56 characters long? Needs review and testing.</li>
 			<li>Have a toggle for kill_delete. Delete or Disable options.</li>
 			<li>Facilitate msg searching via gtk_list_view_scroll_to in GTK4 and ?? in Flutter.</li>
 			<li>We need to do sanity checks on sticker/image data or people can be crashed with junk stickers/images. (Send 0 size .gif or bunk data for testing)</li>
@@ -210,7 +210,6 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
-			<li>Add/Generate pages need max length for entry fields (56 bytes), since we still use arbitrary maximum lengths for peernicks</li>
 			<li>Multi-Select: Tables should allow multiple selections for deletion. It should show only Delete (or Accept + Reject).</li>
 			<li>Implement our fancy new .SVG icons (can wait for GTK4.14) and colorize, replacing .PNG files. Search our code for gtk_symbolic_paintable_snapshot_symbolic, where we have an example implementation ready.</li>
 			<li>Tooltips: Use text_tooltip_ prefix. For flutter, https://material.io/components/tooltips alternatively we have used showSnackBar in Flutter and could use it for safety warnings/etc.</li>
@@ -274,6 +273,7 @@
 		<h3>TODO List for Flutter client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Are our CGO files being linked to libtorx, causing bloat and slow startups?</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
 				<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
@@ -288,7 +288,6 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>Tor transports (written in Go) need to be built and shipped: Lyrebird (replacing obfs4proxy?) && Conjure (really interesting)</li>
 			<li>Flutter CMakeLists.txt: If jnilibs is populated with files, don't try to copy output binaries into jnilibs because if deleted the build dir and rebuilt a release only, it will be empty</li>
 			<li>Crash: Occurs occassionally when application is in the background, especially when other high-RAM applications are running https://stackoverflow.com/questions/44425584/context-startforegroundservice-did-not-then-call-service-startforeground E/AndroidRuntime(12140): android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{52682ad u0 com.torx.chat/com.dexterous.flutterlocalnotifications.ForegroundService}</li>
 			<li>Crash: Also FlutterLocalNotifications, Unable to start service com.dexterous.flutterlocalnotifications.ForegroundService@52b4439 with null: java.lang.NullPointerException: Attempt to invoke virtual method 'java.io.Serializable android.content.Intent.getSerializableExtra(java.lang.String, java.lang.Class)' on a null object reference</li>
