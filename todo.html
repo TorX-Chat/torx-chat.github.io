@@ -54,11 +54,10 @@
 		</ul>	
 		<h4>Ideal project-wide goals before full-release:</h4>
 		<ul>
-			<li>Voice notes (in the UI clients)</li>
-			<li>Walkie-Talkie mode (in the UI clients)</li>
 			<li>Ncurses client</li>
 			<li>CLI/API client for integration with AI bots/etc (Julia)</li>
 			<li>Google PlayStore listing</li>
+			<li>FDroid listing (official repo, not ours)</li>
 			<li>Packaging for most major Linux/BSD distributions (official or otherwise)</li>
 			<li>iOS support</li>
 		</ul>
@@ -101,6 +100,13 @@
 				<li>Issue: Invalid messages could come *incredibly* infrequently, if a malicious peer (ie, a peer could report a 1000 GB message and send it over weeks, never triggering an 'invalid' warning).</li>
 				<li>Thought: Invalid messages already report errors, so do we *really* need redundant callback, which has very little legitimate value?</li>
 			</ul>
+			<li>Arti / Vanguards</li>
+			<ul>
+				<li>Need to migrate to Arti as soon as viable and enable full vanguard support https://spec.torproject.org/vanguards-spec/full-vanguards.html</li>
+				<li>Background: https://blog.torproject.org/tor-is-still-safe/index.html https://blog.torproject.org/announcing-vanguards-for-arti/</li>
+				<li>Alternative mitigation method offering full-vanguards (Note: abandonware) https://github.com/mikeperry-tor/vanguards</li>
+				<li>Tor >= 0.4.7.0 already has built-in support for Vanguards-lite: https://spec.torproject.org/vanguards-spec/vanguards-lite.html</li>
+			</ul>
 			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
@@ -113,6 +119,7 @@
 			</ul>
 			<li>CMakeLists.txt:</li>
 			<ul>
+				<li>Needs to have install directive (LIBRARY DESTINATION lib), to allow independent builds and installs of .so file, without re-compiling UIs.</li>
 				<li>set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			</ul>
@@ -134,6 +141,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>There are a few places we can be more careful about not de-referencing null pointers. Search blake3.c and base32.c for "	*" (aka \t*). The blake3 functions do no sanity checks on arguments passed, and the base32_decode function can be to be re-written (in stack).</li>
 			<li>"Include the system error text (from perror or equivalent) in every error message resulting from a failing system call" https://www.gnu.org/prep/standards/html_node/Semantics.html</li>
 			<li>Onloading/offloading old messages:</li>
 			<ul>
@@ -199,17 +207,17 @@
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
-			<li>Display audio message length: Either obtain it (best), estimate it, or make it part of the message (worst).</li>
+			<li>Display audio message length: Either obtain it (best, but most costly in CPU), estimate it (unreliable), or make it part of the message (worst, but least costly in CPU).</li>
 			<li>Allow audio message playback stopping upon second tap</li>
 			<li>Global and per-peer settings of "Enable microphone"</li>
+			<li>Write .aac files to disk (from mobile and GTK4) and compile this to verify that no metadata is included https://gstreamer.freedesktop.org/documentation/application-development/advanced/metadata.html?gi-language=c</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>String functions in UI should use secure allocators/de-allocators, if possible. (Note: not possible?)</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>Visual indicators for played/unplayed audio: stored how? Essentially read/unread per-message.</li>
 			<li>Streaming audio: Ideas? The biggest issue is playback. In audio.c, we would have to write a new playback function. In flutter, unknown.</li>
-			<li>Walkie-talkie mode (NOT viable -- read to end): Auto-play is an issue because multiple messages could come in at the same time and overlap. Could be resolved with 'stream, disgard' and a queue. Unsure whether to have a unified queue for groups, or a per-peer queue. Unified is could lead to out-of-order playback and infinite lag (if everyone is talking at once -- VERY BAD). Per-peer could also lead to a different type of out-of-order playback.</li>
+			<li>Walkie-talkie mode: Auto-play is an issue because multiple messages could come in at the same time and overlap. Could be resolved with 'stream, disgard' and a queue. Unsure whether to have a unified queue for groups, or a per-peer queue. Unified could experience infinite lag, if everyone is talking at once, which would be intolerable, so a per-peer queue and allowing simultaneous playback from multiple peers may be preferable. This would give a true walkie experience, but messages must be sent *live* rather than once fully recorded.</li>
 			<li>Test and document "Stealth addresses". Facilitated by peer_save(), "Stealth Addresses" functionality is where invalid (non-base32) and excessive (beyond 51 characters) characters are stripped. To utilize, take a 51(?) length TorX-ID, sprinkle invalid characters throughout it as desired, add unlimited length suffix trailing it, and then pass to peer_save. Note: cannot be exactly 56 characters long? Needs review and testing.</li>
 			<li>Have a toggle for kill_delete. Delete or Disable options.</li>
 			<li>Facilitate msg searching via gtk_list_view_scroll_to in GTK4 and ?? in Flutter.</li>
@@ -235,12 +243,14 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>Need to implement a recording button or keyboard switcher, which will directly call record_start and record_stop. No need pthread. Have the ability to cancel.</li>
+			<li>Need to list appropriate GStreamer package as a build dependancy</li>
 			<li>t_main.global_pos and ].pos need to be analysed. Whether they are fully working or not is unknown. It's likely that adding messages from pos==0 is breaking every subsequent .pos, which likely needs to be modified (so, if we add 15 messages from 0, every other message with >0 ].pos needs to be +=15. For efficiency, this would be done in the functions that call print_message, not in print_message itself).</li>
 			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 			<li>Replace double-level popovers with buttons on the first-level popover. We use them for 'Save' and 'Delete' in the sticker chooser, where they cause crashes. Additionally in GTK only: cause a rebuilt after 'Save' to remove green border, and rebuilt after 'Delete'.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Bug: Messages that are larger than the chat window cannot be long-pressed properly (so cannot copy, etc). Issue is caused by the popover being spawned at the top of the message rather than the point of long-press.</li>
 			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Create .rpm file + RedHat repo</li>
@@ -262,7 +272,6 @@
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Vertical mode: consider putting Send button below the emoji and attach buttons, or simply hide buttons other than Send while typing (like Flutter client).</li>
 			<li>Memory leakage: Free memory. Eliminate memory leaks so that it can valgrind 0. g_free, g_object_free(), etc Unsure how to handle sensitive things.</li>
-			<li>GStreamer or PortAudio library ( https://github.com/PortAudio/portaudio ) to record .wav type audio for voice messages / streaming chat / walkie mode. Notes elsewhere suggest Vorbis being preferable for streamed audio.</li>
 			<li>Review any _swapped( and instead set proper args for given ::signal) (note: if signal can't be found in GTK docs, check gobject docs)</li>
 			<li>Have some clang specific compile flags. Could add more. See CMakeLists.txt.</li>
 			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
@@ -306,6 +315,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>"Resend" is available in different/less circumstances than in GTK</li>
 			<li>Flutter CMakeLists.txt: If jnilibs is populated with files, don't try to copy output binaries into jnilibs because if deleted the build dir and rebuilt a release only, it will be empty.</li>
 			<li>Can't change app name on the fly, but can change icon. Could use it to notify user of messages or put alternate icon option (calculator, or something people never use). "The calculator theoretically opens chat but it doesn't work anymore. They said it requires entering a specific calculation," Micay said.</li>
 			<li>Should use gallery with photo_view to allow swipping back/forward to see other images in PhotoView.</li>
