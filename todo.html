@@ -44,7 +44,7 @@
 		<h3>Schedule</h3>
 		<h4>Ideal full-release date:</h4>
 		<ul>
-			<li>Before November 5th 2024 (Election day)</li>
+			<li>Before November 5th 2024 (Election day / Guy Fawkes Day)</li>
 		</ul>
 		<h4>Minimal project-wide goals before full-release:</h4>
 		<ul>
@@ -207,12 +207,10 @@
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
-			<li>Display audio message length: Either obtain it (best, but most costly in CPU), estimate it (unreliable), or make it part of the message (worst, but least costly in CPU).</li>
-			<li>Allow audio message playback stopping upon second tap</li>
 			<li>Global and per-peer settings of "Enable microphone"</li>
-			<li>Write .aac files to disk (from mobile and GTK4) and compile this to verify that no metadata is included https://gstreamer.freedesktop.org/documentation/application-development/advanced/metadata.html?gi-language=c</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>String functions in UI should use secure allocators/de-allocators, if possible. (Note: not possible?)</li>
+			<li>Analyze audio recordings for metadata? Requires writing samples to disk or analyzing sources https://gstreamer.freedesktop.org/documentation/application-development/advanced/metadata.html?gi-language=c</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
@@ -242,14 +240,13 @@
 		<h3>TODO List for GTK4 client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Need to implement a recording button or keyboard switcher, which will directly call record_start and record_stop. No need pthread. Have the ability to cancel.</li>
 			<li>Need to list appropriate GStreamer package as a build dependancy</li>
 			<li>t_main.global_pos and ].pos need to be analysed. Whether they are fully working or not is unknown. It's likely that adding messages from pos==0 is breaking every subsequent .pos, which likely needs to be modified (so, if we add 15 messages from 0, every other message with >0 ].pos needs to be +=15. For efficiency, this would be done in the functions that call print_message, not in print_message itself).</li>
 			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
-			<li>Replace double-level popovers with buttons on the first-level popover. We use them for 'Save' and 'Delete' in the sticker chooser, where they cause crashes. Additionally in GTK only: cause a rebuilt after 'Save' to remove green border, and rebuilt after 'Delete'.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>GTK_FACTORY_BUG mitigation has a side effect: messages are not reloaded until application restart, which means that modifying peernicks of group members do not change nicks within loaded messages until restart. Mitigate by re-loading effected messages.</li>
 			<li>Bug: Messages that are larger than the chat window cannot be long-pressed properly (so cannot copy, etc). Issue is caused by the popover being spawned at the top of the message rather than the point of long-press.</li>
 			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
 			<li>Create .deb file + Debian repo</li>
