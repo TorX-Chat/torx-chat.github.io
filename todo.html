@@ -57,14 +57,13 @@
 			<li>Packaging for most major Linux/BSD distributions (official or otherwise)</li>
 			<li>iOS support</li>
 		</ul>
-		<h4>For public discussion:</h4>
+		<h4>For public discussion (Library):</h4>
 		<ul>
-			<li>Be able to drag messages / completed files to other peers? Accidents could occur. Another option is "Forward to".</li>
+			<li>Peer struct is currently an array of struct; there may be benefits to moving it to a linked list, facilitating more of an OOP approach, though an incredible amount work would be involved.</li>
 			<li>Putting in a "wrong" password could be made impossible. We could accept any password and just create a new config file. When unlocking, we could try the hashed password (decryption_key) against all config files.</li>
-			<li>Keyboard Privacy in Flutter being enabled by default: it breaks non-alphabetical languages such as Chinese</li>
 			<li>Git submodules vs ExternalProjects_Add vs other?</li>
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
-			<li>Use timezone info to determine default torrc? (this could really be a UI thing, though we do have the censored_region variable in lib). Timezone + language would be more effective.</li>
+			<li>Use timezone info to determine default torrc? (Briar does this. This could really be a UI thing, though we do have the censored_region variable in lib). Timezone + language would be more effective.</li>
 			<li>File transfers: fallocate(linux)/lseek(linux) or pre-allocate files in some sort of null state. Would have to do this in OS specific manners https://devblogs.microsoft.com/oldnewthing/20160714-00/?p=93875</li>
 			<li>Could allow protocols to require an acknowledgement (ACK) of receipt by sending a fnv1a unsalted hash (uint32) back. Using a 64 byte checksum is unnecessary and wastes RAM space in the message struc, HOWEVER a truncated SHA3 may be better because it would be able to handle larger message sizes, because it doesn't rely on loading the entire message into stack... but we could easily re-write the fnv1a hasher function to use the heap. Either method does not require both sides to keep a shared index number of any type. Would need to store hashes for sent messages of this type in struct so that confirmation could rapidly be determined without having to re-hash every such message.</li>
 		<!--	<li>M****o-cli integration (not before full release / 2025)</li>
@@ -73,14 +72,15 @@
 				<li>Can reptyr steal control of a CLI program running in fork? (presuming no, but can other methods?) If so then we need to integrate M****o by function calls rather than CLI. Should talk to devs or look at existing implementations.</li>
 			</ul> -->
 		</ul>
+		<h4>For public discussion (UI Clients):</h4>
+		<ul>
+			<li>Be able to drag messages / completed files to other peers? Accidents could occur. Another option is "Forward to".</li>
+			<li>Keyboard Privacy in Flutter being enabled by default: it breaks non-alphabetical languages such as Chinese</li>
+		</ul>
 	<section id="library">
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Deleting large amounts messages (~10+ or all) then sending/receiving a new message to/from the same peer causes crash.</li>
-			<ul>
-				<li>NOTE: may only apply when deleting i < 0 messages (those loaded via load_more_messages).</li>
-			</ul>
 			<li>Consider the viability of (or move towards) full-duplex messages of all types, and treating files nearly the same as any other message.</li>
 			<ul>
 				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
@@ -107,7 +107,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>Multiple offers of the same file to the same peer is undefined behavior, especially when changing filename. Test it.</li>
+			<li>Cascading sends should be allowed to trigger on yellow/sendfd in addition to orange/recvfd.</li>
 			<li>PROPOSE_UPGRADE:</li>
 			<ul>
 				<li>After acting on a PROPOSE_UPGRADE, a restart is required before v3auth will be implemented. This can be resolved.</li>
@@ -137,6 +137,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>struct int_int should be globally replaced with iitovp/vptoii_n/vptoii_i.</li>
 			<li>There are a few places we can be more careful about not de-referencing null pointers. Search blake3.c and base32.c for "	*" (aka \t*). The blake3 functions do no sanity checks on arguments passed, and the base32_decode function can be to be re-written (in stack).</li>
 			<li>"Include the system error text (from perror or equivalent) in every error message resulting from a failing system call" https://www.gnu.org/prep/standards/html_node/Semantics.html</li>
 			<li>Onloading/offloading old messages:</li>
@@ -145,8 +146,11 @@
 				<li>2) Cache / Re-loading / Merging cache:</li>
 				<ul>
 					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
+					<li>delete_log should probably be broken up into log_delete and shrink_message_struct, where log_delete calls shrink_message_struct, but shrink_message_struct can be separately called. Both could take n (or -1) as args.</li>
 				</ul>
 			</ul>
+			<li>Add a `message_spoof(n,time,nstime,data,len)` function where users can click between messages to add a fake message to their history. Primary Issue: How we fit this into the message struct? This is where a linked list struct would be handy. Secondary issue: Is there significant value? The order in which it is inserted into SQLCipher might give it away as non-genuine.</li>
+			<li>Multiple offers of the same file with different filenames to the same peer has some weird behavior but is safe.</li>
 			<li>Documentation: As of 2.0.10, PIPE_AUTH is signed and utilized when v3auth is not available (Tor <0.4.6.1) to facilitate secure full-duplex connections.</li>
 			<li>Documentation: PROPOSE_UPGRADE works for ugprades from v1 (PIPE_AUTH) to v2 (v3auth), but cannot facilitate downgrades (and for many reasons should/will never). However, if both peers upgrade then disable v3auth, it will successfully fall back to PIPE_AUTH.</li>
 			<li>Where multiple getter functions occur in a block, it would be more efficient to manually lock/unlock once.</li>
