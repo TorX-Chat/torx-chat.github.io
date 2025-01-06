@@ -81,12 +81,17 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
+			<li>message_resend hasn't been tested in a while. Test with public groups, private groups(signed), p2p.</li>
+			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
+			<li>GROUP_OFFER_ACCEPT: ONLY respond IF we verify that we already sent this peer an UNUSED invitation (perhaps we should save this with extraneous), otherwise could be issues (ie, a malicious peer could accept multiple times and bring in a bunch of people)</li>
+			<li>iOS (Orbot) / System Tor: We need to re-write tor_call so that all calls are on a single connection and ADD_ONION does not utilize "Detached". See Tor's control-spec.txt. That will enable us to run safely without control_password. However it will not achieve Orbot compatibility at least on Android (which starts up with a random CTRL_PORT). We could work with their devs to get them to resolve the issue.</li>
+			<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li>
 			<li>Consider the viability of (or move towards) full-duplex messages of all types, and treating files nearly the same as any other message.</li>
 			<ul>
 				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
 			</ul>
 			<li>File transfer checksums fail after combination of sender crashes, stickers, messages, multi-file transfers, etc. Need audit.</li>
-			<li>libevent.c read_conn: be careful not to cause reads beyond message length (event_strc->buffer_len / packet_len)</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping or do traffic analysis).</li>
 			<ul>
 				<li>Minor notice for incomplete, major for invalid + counter.</li>
@@ -107,11 +112,21 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>Cascading sends should be allowed to trigger on yellow/sendfd in addition to orange/recvfd.</li>
-			<li>PROPOSE_UPGRADE:</li>
+			<li>(Easy fix) In sql_populate_message, if(reverse) and if(protocol == ENUM_PROTOCOL_FILE_REQUEST), we should probably avoid "status = " changes to _ACCEPTED.</li>
+			<li>(Easy fix) Implement a "min_fail" to reduce the cost of begin_cascade and peer_offline. It should initialize at 0, be increased to max_i by begin_cascade, and be reduced to min_i by load_more. It should only be utilized by begin_cascade and perhaps peer_offline. Alternative: pass i of last sent message to begin_cascade, but that won't account for load_more, which may or may not be desirable. Simpler though. NO ---> Implement an `int* queue` in peer struct. Add 'i' to it when "Refusing to send_prep" and "Send_prep too early" in send_prep, and when `].stat = ` in load_messages_struc. Read from queue to determine next message to send, in begin_cascade. Remove from queue in packet_removal and when message is deleted (Note: may not be necessary when deleted). Note: This is 'low priority' because show_log_messages limits the amount of messages required to be parsed without a queue. NOTE: Could result in rare double-sends due to race between begin_cascade and packet_removal? Our current setup is subject to the same potential race? Presumably yes on socket_swappable messages, since ENUM_MESSAGE_SENT is set in packet_removal. Both sockets *could* hypothetically send the same message. Solution is to "claim" it somehow? Minor problem, solve later as seperate TODO.</li>
+		<!--	<li>If messages are ENUM_STREAM_DISCARDABLE and logged, we could have them save only after sending (ex: File Request). Note: Doesn't STREAM imply it is deleted after sending? We might need another type... </li> -->
+			<li>Group file transfers of 4 byte files fail in file_init: "Coding or IO error. File size != sum of sections" 4!=8. More testing and diagnosis required.</li>
+			<li>"Last transferred > transferred" occurs frequently (on the sender side only?) when starting file transfers.</li>
+			<li>Blacklisting should only occur if you requested the whole section from a single peer, otherwise we have no idea who we got the bad packet from. We currently have no way of tracking this because we only track split_status_req. We will have to track split_status_req_start and split_status_req_end.</li>
+			<li>nn variable name is frequently used where the purpose is unclear. Should utilize more descriptive variable names and cleanup related code.</li>
+			<li>Group File Transfers:</li>
 			<ul>
-				<li>After acting on a PROPOSE_UPGRADE, a restart is required before v3auth will be implemented. This can be resolved.</li>
-				<li>Currently we PROPOSE_UPGRADE on every connection. We can avoid that if we store the current value of the connection and not just peerversion.</li>
+				<li>Important: select_peer should probably return a list of peers, or at least a fd_type and the proposed section.</li>
+				<li>select_peer seems to select the original offerer of a file most of the time, rather than utilizing those who sent FILE_OFFER_PARTIAL data.</li>
+				<li>We rely on section_update to request the next section when one section is complete, but what if we requested less than a full section from a peer? ie: if we requested from a _PARTIAL? Until we resolve this, we should perhaps avoid requesting partial sections.</li>
+			<!--	<li>If select_peer selects a peer who sent FILE_OFFER_PARTIAL data, "File request too early", meaning .bev_recv is null, which means the n may be wrong?</li>
+				<li>"packet_removal reported message pos > message_len" occurs during transfer. Despite all efforts, we don't know why.</li>	-->
+				<li>Need a ENUM_PROTOCOL_FILE_REFUSE protocol so that, for example, if a peer has moved/deleted a file or changed its permissions, the requesting peer doesn't wait endlessly for data to arrive after making a request.</li>
 			</ul>
 			<li>CMakeLists.txt:</li>
 			<ul>
@@ -122,37 +137,50 @@
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
-			<li>Consider moving the message size and protocol behind the .message pointer (so we can avoid copying moving message when signing)</li>
 			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev</li>
 			<li>GROUP FILE TRANSFER Documentation: Outbound uses peer_n fd for disk reads, Inbound uses group_ctrl fd for disk writes. When receiving file request, it appears we store outbound date in the group_peer_n. This needs to be documented/understood. When changing file status in process_pause_cancel, we might need to iterate through the relevant group_peer_n and set their status too? idk if we store status there or only transfer amount.</li>
 			<li>We can't support uint64_t file sizes because ftell/fseek only support long int. Unsure what to do about this. It affects our file transfer protocols.</li>
 			<li>accept_automatically. Can either be a toggle or a size slider. size_t is probably most logical. Could also have a list of accepted filetypes. NOTE: Enabling this option will require a check for download_dir. Also, this option should could be DANGEROUS for insecure platforms like Windows/OSX/iOS/Android, where CSAM scanning exists.</li>
 			<li>If a split_folder exists, files inside should be labelled via truncated checksum rather than filename.</li>
+			<li>file_set_path should be able to move a file, if existing and destination is writable.</li>
 			<li>Hash is written to disk in plaintext for our .split file. Perhaps we should encrypt (no) or salt + rehash it (not all hashes, just this hash written to .split file). The reason we don't is because the file itself is written next to it, so what is the security in having the hash salted? We do attempt to securely delete .split files.</li>
-			<li>Requesting a 1 byte file in full-duplex causes an integer overflow / request of a 18446744073709551615 byte file, causing offerer to crash. Need a sanity check that requests are not > file size</li>
+		<!--	<li>(May be outdated) Requesting a 1 byte file in full-duplex causes an integer overflow / request of a 18446744073709551615 byte file, causing offerer to crash.</li>	-->
 			<li>Sodium memory management overhead: Check for compile-time flags that could disable the wasted pages except on debug builds. sodium_malloc() wastes too much memory by allocating 4kb of space for each malloc. See <a href="https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c">HAVE_PAGE_PROTECTION</a></li>
-			<li>iOS (Orbot) / System Tor: We need to re-write tor_call so that all calls are on a single connection and ADD_ONION does not utilize "Detached". See Tor's control-spec.txt. That will enable us to run safely without control_password. However it will not achieve Orbot compatibility at least on Android (which starts up with a random CTRL_PORT). We could work with their devs to get them to resolve the issue.</li>
-			<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li>
 			<li>Clean up error messages / notices / checkpoints using macro defined levels to determine whether debug level + whether they contain sensitive info.</li>
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
-			<li>struct int_int should be globally replaced with iitovp/vptoii_n/vptoii_i.</li>
+			<li>If messages.db is deleted or message history is deleted, _ENTRY_REQUEST _FAIL messages will be deleted, which means public groups we are trying to join will never be joined.</li>
+			<li>We have some places where we unnecessarily fwrite multiple times in sequence rather than once, such as in initialize_split_info.</li>
+			<li>Don't send a ENUM_PROTOCOL_FILE_OFFER_PARTIAL to the peer we received the data from. (Actually, maybe this shouldn't be done).</li>
+			<li>PROPOSE_UPGRADE:</li>
+			<ul>
+				<li>After acting on a PROPOSE_UPGRADE, a restart is required before v3auth will be implemented. This can be resolved.</li>
+				<li>Currently we PROPOSE_UPGRADE on every connection. We can avoid that if we store the current value of the connection and not just peerversion.</li>
+			</ul>
 			<li>There are a few places we can be more careful about not de-referencing null pointers. Search blake3.c and base32.c for "	*" (aka \t*). The blake3 functions do no sanity checks on arguments passed, and the base32_decode function can be to be re-written (in stack).</li>
 			<li>"Include the system error text (from perror or equivalent) in every error message resulting from a failing system call" https://www.gnu.org/prep/standards/html_node/Semantics.html</li>
 			<li>Onloading/offloading old messages:</li>
 			<ul>
-				<li>1) Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
-				<li>2) Cache / Re-loading / Merging cache:</li>
+				<li>Offloading: Should leave us with just -10 to 10 initialized, on all peers</li>
 				<ul>
-					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
 					<li>delete_log should probably be broken up into log_delete and shrink_message_struct, where log_delete calls shrink_message_struct, but shrink_message_struct can be separately called. Both could take n (or -1) as args.</li>
 				</ul>
+				<li>Cache Solution Proposal #1 (bad)</li>
+				<ul>
+					<li>When offloaded, we cache on the initialized message struct, then when re-loading, we just move to a temp local pointer, then sql_populate_message, then add back the cached messages via load_message_struc</li>
+				</ul>
+				<li>Cache Solution Proposal #2 (better)</li>
+				<ul>
+					<li>We offload all messages, except the 10 most recent, which we move to 0 to 10.</li>
+					<li>If we keep the ~50 most recent instead of 10, we can just rely on load_more later.</li>
+				</ul>
+				<li>Remaining issue: We can't just offload all except a set number because then group_peer messages won't align with the appropriate group_n messages.</li>
 			</ul>
 			<li>Add a `message_spoof(n,time,nstime,data,len)` function where users can click between messages to add a fake message to their history. Primary Issue: How we fit this into the message struct? This is where a linked list struct would be handy. Secondary issue: Is there significant value? The order in which it is inserted into SQLCipher might give it away as non-genuine.</li>
 			<li>Multiple offers of the same file with different filenames to the same peer has some weird behavior but is safe.</li>
 			<li>Documentation: As of 2.0.10, PIPE_AUTH is signed and utilized when v3auth is not available (Tor <0.4.6.1) to facilitate secure full-duplex connections.</li>
-			<li>Documentation: PROPOSE_UPGRADE works for ugprades from v1 (PIPE_AUTH) to v2 (v3auth), but cannot facilitate downgrades (and for many reasons should/will never). However, if both peers upgrade then disable v3auth, it will successfully fall back to PIPE_AUTH.</li>
+			<li>Documentation: PROPOSE_UPGRADE works for upgrades from v1 (PIPE_AUTH) to v2 (v3auth), but cannot facilitate downgrades (and for many reasons should/will never). However, if both peers upgrade then disable v3auth, it will successfully fall back to PIPE_AUTH.</li>
 			<li>Where multiple getter functions occur in a block, it would be more efficient to manually lock/unlock once.</li>
 			<li>Consider implementation of Proof of Work https://spec.torproject.org/hspow-spec/v1-equix.html for multiple use IDs, when sufficiently mature</li>
 			<li>Convert or eliminate remaining ~100 printf to error_printf</li>
@@ -170,6 +198,11 @@
 			<li>Consider having UTF8 validator shift forward over any non-utf8 bytes, for use in libevent.c and perhaps message_send (to avoid sql issues), rather than discarding whole messages.</li>
 			<li>For GROUP_PEER, .message and .message_len could be double pointer + pointer, respectively. Unsure if viable and how we would re-structure our message struct for that. This can be ignored for now so long as we aren't having bugs.</li>
 			<li>Consider ripping out libsodium and replacing it with with openssl (since it is already a tor dependency) or libressl. Be sure that we can do everything in onion_gen.c (ex: crypto_sign_ed25519_pk_to_curve25519)</li>
+			<li>Consider moving the message size and protocol behind the .message pointer (so we can avoid copying moving message when signing).</li>
+			<ul>
+				<li>Main issue is that then freeing messages would require a special torx_free, which is very bad. Not worth it.</li>
+			</ul>
+			<li>Kill codes have never been tested in groups because deleting individual peers in groups is a complex concept (since they'll just be re-added)</li>
 		</ul>
 	<!--	<h4>Possibly no longer relevant:</h4>
 		<ul>
@@ -207,6 +240,9 @@
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
+			<li>Un-pause option is not available for PM transfers. (May also apply to Flutter?)</li>
+			<li>Messages that come in out-of-order in group chats are printed as the come in, instead of in-order, if chat is open. (May also apply to Flutter?)</li>
+			<li>When deleting group chat history, only sent public messages disappear immediately. The rest disappear when the chat route is re-opened. (Possibly related to above) (May also apply to Flutter?)</li>
 			<li>Global and per-peer settings of "Enable microphone"</li>
 			<li>Check destination folder write permissions before allowing its' selection</li>
 			<li>String functions in UI should use secure allocators/de-allocators, if possible. (Note: not possible?)</li>
@@ -240,12 +276,15 @@
 		<h3>TODO List for GTK4 client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>transfer_progress_idle can segfault on t_peer[n].t_file[f].progress_bar if messages are deleted. We should be nulling t_peer[n].t_file[f].progress_bar when deleting file messages.</li>
+			<li>Clearing group messages only makes the outbound group messages immediately disappear and doesn't effect the GROUP_PEER messages.</li>
 			<li>Need to list appropriate GStreamer package as a build dependancy</li>
 			<li>t_main.global_pos and ].pos need to be analysed. Whether they are fully working or not is unknown. It's likely that adding messages from pos==0 is breaking every subsequent .pos, which likely needs to be modified (so, if we add 15 messages from 0, every other message with >0 ].pos needs to be +=15. For efficiency, this would be done in the functions that call print_message, not in print_message itself).</li>
 			<li>ListView should be a direct child of ScrolledWindow. If it is a child of a box, there may be issues if having >205 widgets (experienced in a test build). There are 3 places where we might face this issue (ctrl+f gtk_list_view_new), but our chat history itself is properly setup.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>file_set_path should be used to set .file_path, instead of manually setting it.</li>
 			<li>GTK_FACTORY_BUG mitigation has a side effect: messages are not reloaded until application restart, which means that modifying peernicks of group members do not change nicks within loaded messages until restart. Mitigate by re-loading effected messages.</li>
 			<li>Bug: Messages that are larger than the chat window cannot be long-pressed properly (so cannot copy, etc). Issue is caused by the popover being spawned at the top of the message rather than the point of long-press.</li>
 			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
