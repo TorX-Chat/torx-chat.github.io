@@ -198,7 +198,7 @@ ________________________________________________________________________________
 |	ENUM_PROTOCOL_FILE_CANCEL			CHECKSUM[64]														|
 |	ENUM_PROTOCOL_FILE_OFFER_GROUP			HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + MODIFIED[4] + FILENAME (no null termination)	|
 |	ENUM_PROTOCOL_FILE_OFFER_GROUP_DATE_SIGNED	HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + MODIFIED[4] + FILENAME (no null termination)	|
-|	ENUM_PROTOCOL_FILE_OFFER_PARTIAL		HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + split_info[section][8] *(splits + 1)		|
+|	ENUM_PROTOCOL_FILE_OFFER_PARTIAL		HashOfHashes + Splits[1] + CHECKSUM_BIN_LEN *(splits + 1)) + SIZE[8] + split_progress[section][8] *(splits + 1)		|
 |	ENUM_PROTOCOL_FILE_REQUEST			CHECKSUM[64] + START[8] + END[8]											|
 |	ENUM_PROTOCOL_GROUP_BROADCAST			crypto_box_SEALBYTES[48] + ( Salt[16] + Onion[56] + ed25519_pk[32] ) 							|
 |	ENUM_PROTOCOL_GROUP_PUBLIC_ENTRY_REQUEST	crypto_box_SEALBYTES[48] + ( Salt[16] + Onion[56] + ed25519_pk[32] ) 							|
@@ -228,6 +228,13 @@ ________________________________________________________________________________
 |	Start position		[8] uint64_t		Unsigned, every packet. Offset from the start of the file.						|
 |	Data			(up to packet size)	Unsigned, every packet.	Up to PACKET_SIZE_MAX - 16 (sum of above bytes) of data				|
 |_______________________________________________________________________________________________________________________________________________________________|
+		</pre>
+		<pre>
+Data stored in plaintext on disk (2025/01/10 version, current)
+________________________________________________________________________________________________
+|	.split Files	CHECKSUM_BIN_LEN + Splits[1] + split_progress[section][8] *(splits + 1)	|
+|	Anything intentionally stored in plaintext to any of the databases.			|
+|_______________________________________________________________________________________________|
 		</pre>
 	</section>
 	<section id="safety">

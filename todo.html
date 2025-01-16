@@ -82,6 +82,7 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
+			<li>Some file related protocols are saved even if logging is disabled. This should be resolved.</li>
 			<li>message_resend hasn't been tested in a while. Test with public groups, private groups(signed), p2p.</li>
 			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
 			<li>GROUP_OFFER_ACCEPT: ONLY respond IF we verify that we already sent this peer an UNUSED invitation (perhaps we should save this with extraneous), otherwise could be issues (ie, a malicious peer could accept multiple times and bring in a bunch of people)</li>
@@ -118,7 +119,7 @@
 			<li>Group file transfers of 4 byte files fail in file_init: "Coding or IO error. File size != sum of sections" 4!=8. More testing and diagnosis required.</li>
 			<li>"Last transferred > transferred" occurs frequently (on the sender side only?) when starting file transfers.</li>
 			<li>Blacklisting should only occur if you requested the whole section from a single peer, otherwise we have no idea who we got the bad packet from. We currently have no way of tracking this because we only track split_status_req. We will have to track split_status_req_start and split_status_req_end.</li>
-			<li>nn variable name is frequently used where the purpose is unclear. Should utilize more descriptive variable names and cleanup related code.</li>
+			<li>Zero_ functions should have UI callbacks. There are limitations related to locks regarding how we could implement this. Remember to put them outside the function (after is preferable, but before is fine during shutdown).</li>
 			<li>Group File Transfers:</li>
 			<ul>
 				<li>Important: select_peer should probably return a list of peers, or at least a fd_type and the proposed section.</li>
@@ -150,8 +151,11 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Change 'n' to 'file_n' in file related functions that are passed n,f pairs or n,f,peer_n. n and file_n must NEVER be used together in a function, to prevent confusion/mistakes.</li>
 			<li>If messages.db is deleted or message history is deleted, _ENTRY_REQUEST _FAIL messages will be deleted, which means public groups we are trying to join will never be joined.</li>
+			<li>2025/01/15: Pausing is near indistinguishable from simply being inactive (ENUM_FILE_INACTIVE_ACCEPTED). As long as file_path is set, we treat it as accepted, and then any incoming offer will start the transfer. This inability to permanently pause (without cancelling) is annoying, but we never had a strong pause because either peer could unpause. Therefore, this is OK. Do not abolish pause protocol. It serves other purposes.</li>
 			<li>We have some places where we unnecessarily fwrite multiple times in sequence rather than once, such as in initialize_split_info.</li>
+			<li>Investigate changing build system to Meson and using Git submodules, as suggested in Issue #2.</li>
 			<li>Don't send a ENUM_PROTOCOL_FILE_OFFER_PARTIAL to the peer we received the data from. (Actually, maybe this shouldn't be done).</li>
 			<li>PROPOSE_UPGRADE:</li>
 			<ul>
@@ -221,9 +225,9 @@
 				<li>494 > 0. Protocol: Sticker data. Likely will corrupt message. Packet len was 498</li>
 			</ul>
 			<li>Deleting more than 10 messages then sending/receiving a new message results in realloc attempting to shrink the message struct, and then there can be other issues.</li>
-			<ul>
+			<ul> // TODO do not remove this block
 				<li>We should probably resize the struct (down) when we delete message history, or</li>
-				<li>We should use a linked list for our messages (like we do with group messages), instead of an array of struct</li>
+				<li>We could (should?) use a linked list for our messages (like we do with group messages), instead of an array of struct, to vastly reduce the RAM cost of streaming data</li>
 				<ul>
 					<li>With enough work, we could eliminate n,i,g,f by using linked lists</li>
 					<li>We would pass around abstracted structs for each peer/message/etc.</li>
