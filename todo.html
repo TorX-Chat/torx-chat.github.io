@@ -81,6 +81,7 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>message_load_more is seriously broken (memory issue or multiple in library, and highly likely additional max_i/min_i related issue in Flutter's ListView.builder? Unsure). Bailing out until we can fix it. 2025/01/21. Be sure to reduce show_log_messages to facilitate testing. Problem may be related to increment_i always returning a positive integer?</li>
 			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
 			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
 			<li>Some file related protocols are saved even if logging is disabled. This should be resolved.</li>
