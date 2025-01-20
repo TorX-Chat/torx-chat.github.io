@@ -81,7 +81,8 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
+			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
+			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
 			<li>Some file related protocols are saved even if logging is disabled. This should be resolved.</li>
 			<li>message_resend hasn't been tested in a while. Test with public groups, private groups(signed), p2p.</li>
 			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
@@ -148,6 +149,7 @@
 		<!--	<li>(May be outdated) Requesting a 1 byte file in full-duplex causes an integer overflow / request of a 18446744073709551615 byte file, causing offerer to crash.</li>	-->
 			<li>Sodium memory management overhead: Check for compile-time flags that could disable the wasted pages except on debug builds. sodium_malloc() wastes too much memory by allocating 4kb of space for each malloc. See <a href="https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c">HAVE_PAGE_PROTECTION</a></li>
 			<li>Clean up error messages / notices / checkpoints using macro defined levels to determine whether debug level + whether they contain sensitive info.</li>
+			<li>Error messages cannot be inside torx_read/torx_write in case callbacks are guaranteed to be handled asyncronously, by adding them to a queue. Currently, very few are, if any.</li>
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
