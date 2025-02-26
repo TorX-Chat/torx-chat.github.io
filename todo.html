@@ -81,7 +81,7 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>message_load_more is seriously broken (memory issue or multiple in library, and highly likely additional max_i/min_i related issue in Flutter's ListView.builder? Unsure). Bailing out until we can fix it. 2025/01/21. Be sure to reduce show_log_messages to facilitate testing. Problem may be related to increment_i always returning a positive integer?</li>
+			<li>ENUM_PROTOCOL_FILE_INFO_REQUEST maybe should not be facilitated in public groups.</li>
 			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
 			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
 			<li>Some file related protocols are saved even if logging is disabled. This should be resolved.</li>
@@ -117,6 +117,7 @@
 		<ul>
 			<li>(Easy fix) In sql_populate_message, if(reverse) and if(protocol == ENUM_PROTOCOL_FILE_REQUEST), we should probably avoid "status = " changes to _ACCEPTED.</li>
 			<li>(Easy fix) Implement a "min_fail" to reduce the cost of begin_cascade and peer_offline. It should initialize at 0, be increased to max_i by begin_cascade, and be reduced to min_i by load_more. It should only be utilized by begin_cascade and perhaps peer_offline. Alternative: pass i of last sent message to begin_cascade, but that won't account for load_more, which may or may not be desirable. Simpler though. NO ---> Implement an `int* queue` in peer struct. Add 'i' to it when "Refusing to send_prep" and "Send_prep too early" in send_prep, and when `].stat = ` in load_messages_struc. Read from queue to determine next message to send, in begin_cascade. Remove from queue in packet_removal and when message is deleted (Note: may not be necessary when deleted). Note: This is 'low priority' because show_log_messages limits the amount of messages required to be parsed without a queue. NOTE: Could result in rare double-sends due to race between begin_cascade and packet_removal? Our current setup is subject to the same potential race? Presumably yes on socket_swappable messages, since ENUM_MESSAGE_SENT is set in packet_removal. Both sockets *could* hypothetically send the same message. Solution is to "claim" it somehow? Minor problem, solve later as seperate TODO.</li>
+			<li>ENUM_PROTOCOL_FILE_REQUEST is logged so that we can set the status of the file. This is a lot of bloat, considering that one file could have many requests, especially in groups. It would be more efficient (disk space) to store the file status in another manner.</li>
 		<!--	<li>If messages are ENUM_STREAM_DISCARDABLE and logged, we could have them save only after sending (ex: File Request). Note: Doesn't STREAM imply it is deleted after sending? We might need another type... </li> -->
 			<li>Group file transfers of 4 byte files fail in file_init: "Coding or IO error. File size != sum of sections" 4!=8. More testing and diagnosis required.</li>
 			<li>"Last transferred > transferred" occurs frequently (on the sender side only?) when starting file transfers.</li>
@@ -129,7 +130,7 @@
 				<li>We rely on section_update to request the next section when one section is complete, but what if we requested less than a full section from a peer? ie: if we requested from a _PARTIAL? Until we resolve this, we should perhaps avoid requesting partial sections.</li>
 			<!--	<li>If select_peer selects a peer who sent FILE_OFFER_PARTIAL data, "File request too early", meaning .bev_recv is null, which means the n may be wrong?</li>
 				<li>"packet_removal reported message pos > message_len" occurs during transfer. Despite all efforts, we don't know why.</li>	-->
-				<li>Need a ENUM_PROTOCOL_FILE_REFUSE protocol so that, for example, if a peer has moved/deleted a file or changed its permissions, the requesting peer doesn't wait endlessly for data to arrive after making a request.</li>
+				<li>Need a ENUM_PROTOCOL_FILE_REFUSE protocol so that, for example, if a peer has moved/deleted a file or changed its permissions, the requesting peer doesn't wait endlessly for data to arrive after making a request. Note: Can simply send a _PARTIAL with 0/0/0 and have the receiver cancel any requests from this peer.</li>
 			</ul>
 			<li>CMakeLists.txt:</li>
 			<ul>
@@ -138,6 +139,7 @@
 				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			</ul>
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
+			<li>Due to message_prep existing within message_send, and only one g being passed around (no distinction between "relevant g" and "target g"), it's impossible to send a group offer into a group.</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
 			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev</li>
