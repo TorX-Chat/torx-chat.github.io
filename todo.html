@@ -156,7 +156,8 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
-			<li>Change 'n' to 'file_n' in file related functions that are passed n,f pairs or n,f,peer_n. n and file_n must NEVER be used together in a function, to prevent confusion/mistakes.</li>
+			<li>A "getter_exists" function could exist, which would at minimum be used for pointers to see if they are NULL. Could error out if not a pointer, or do some other form of checks like a zero check on the first byte (for onions, peeronions) or is_null (for hashes, other arrays).</li>
+			<li>Change 'n' to 'file_n' in file related functions that are passed n,f pairs or n,f,peer_n. n and file_n must NEVER be used together in a function, to prevent confusion/mistakes. Relevant variable names: file_n, target_n, group_n, peer_n, etc.</li>
 			<li>If messages.db is deleted or message history is deleted, _ENTRY_REQUEST _FAIL messages will be deleted, which means public groups we are trying to join will never be joined.</li>
 			<li>2025/01/15: Pausing is near indistinguishable from simply being inactive (ENUM_FILE_INACTIVE_ACCEPTED). As long as file_path is set, we treat it as accepted, and then any incoming offer will start the transfer. This inability to permanently pause (without cancelling) is annoying, but we never had a strong pause because either peer could unpause. Therefore, this is OK. Do not abolish pause protocol. It serves other purposes.</li>
 			<li>We have some places where we unnecessarily fwrite multiple times in sequence rather than once, such as in initialize_split_info.</li>
@@ -270,6 +271,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>ENUM_PROTOCOL_UTF8_TEXT_QUOTE could include a suffix of the quoted message time + nstime. Main difficulty in implementation is UI design.</li>
 			<li>Multi-Select: Tables should allow multiple selections for deletion. It should show only Delete (or Accept + Reject).</li>
 			<li>Implement our fancy new .SVG icons (can wait for GTK4.14) and colorize, replacing .PNG files. Search our code for gtk_symbolic_paintable_snapshot_symbolic, where we have an example implementation ready.</li>
 			<li>Tooltips: Use text_tooltip_ prefix. For flutter, https://material.io/components/tooltips alternatively we have used showSnackBar in Flutter and could use it for safety warnings/etc.</li>
