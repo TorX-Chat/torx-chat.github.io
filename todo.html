@@ -81,6 +81,7 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Need a message_send-like function that allows sending stream or message data to a specific subset of peers within a group, instead of everyone, for audio calls to send only to participating peers.</li>
 			<li>ENUM_PROTOCOL_FILE_INFO_REQUEST maybe should not be facilitated in public groups.</li>
 			<li>Certain types of group streams (A/V call data, for example) need only be sent to a subset of group peers.</li>
 			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
@@ -142,7 +143,7 @@
 			<li>Prioritize our own broadcasts: Calling broadcast_add(-1,...), to add a group, could take a very long time because manually added groups are not prioritized in broadcast_threaded. Should probably have an additional queue of high priority (our own) broadcasts.</li>
 			<li>Due to message_prep existing within message_send, and only one g being passed around (no distinction between "relevant g" and "target g"), it's impossible to send a group offer into a group.</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
-			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw)</li>
+			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw). We may also need to have a time-deletion where after a certain number of seconds we just consider it no longer relevant.</li>
 			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev</li>
 			<li>GROUP FILE TRANSFER Documentation: Outbound uses peer_n fd for disk reads, Inbound uses group_ctrl fd for disk writes. When receiving file request, it appears we store outbound date in the group_peer_n. This needs to be documented/understood. When changing file status in process_pause_cancel, we might need to iterate through the relevant group_peer_n and set their status too? idk if we store status there or only transfer amount.</li>
 			<li>We can't support uint64_t file sizes because ftell/fseek only support long int. Unsure what to do about this. It affects our file transfer protocols.</li>
@@ -261,6 +262,8 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>RAM: Get stickers out of RAM</li>
+			<li>RAM: Perhaps offload messages as soon as we get to the bottom?</li>
 			<li>Streaming audio: Ideas? The biggest issue is playback. In audio.c, we would have to write a new playback function. In flutter, unknown.</li>
 			<li>Walkie-talkie mode: Auto-play is an issue because multiple messages could come in at the same time and overlap. Could be resolved with 'stream, disgard' and a queue. Unsure whether to have a unified queue for groups, or a per-peer queue. Unified could experience infinite lag, if everyone is talking at once, which would be intolerable, so a per-peer queue and allowing simultaneous playback from multiple peers may be preferable. This would give a true walkie experience, but messages must be sent *live* rather than once fully recorded.</li>
 			<li>Test and document "Stealth addresses". Facilitated by peer_save(), "Stealth Addresses" functionality is where invalid (non-base32) and excessive (beyond 51 characters) characters are stripped. To utilize, take a 51(?) length TorX-ID, sprinkle invalid characters throughout it as desired, add unlimited length suffix trailing it, and then pass to peer_save. Note: cannot be exactly 56 characters long? Needs review and testing.</li>
@@ -273,6 +276,8 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>If a last_message is too long, is there any way we can prevent it from cutting a character in half? We can't simply use multiples of 4 because spaces and newlines.</li>
+			<li>Multi-select messages and "forward" / "delete" / "resend" for them</li>
 			<li>ENUM_PROTOCOL_UTF8_TEXT_QUOTE could include a suffix of the quoted message time + nstime. Main difficulty in implementation is UI design.</li>
 			<li>Multi-Select: Tables should allow multiple selections for deletion. It should show only Delete (or Accept + Reject).</li>
 			<li>Implement our fancy new .SVG icons (can wait for GTK4.14) and colorize, replacing .PNG files. Search our code for gtk_symbolic_paintable_snapshot_symbolic, where we have an example implementation ready.</li>
@@ -356,6 +361,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Rebuilds are still too frequent; mostly when bringing keyboard up. Can we make this less costly?</li>
 			<li>Crash: Likely related to but NOT caused by android:stopWithTask="false" in AndroidManifest.xml? Read: https://stackoverflow.com/questions/19568315/how-to-handle-running-service-when-app-is-killed-by-swiping-in-android Occurs occassionally when application is in the background, especially when other high-RAM applications are running https://stackoverflow.com/questions/44425584/context-startforegroundservice-did-not-then-call-service-startforeground E/AndroidRuntime(12140): android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{52682ad u0 com.torx.chat/com.dexterous.flutterlocalnotifications.ForegroundService}</li>
 			<li>Crash: Also FlutterLocalNotifications, Unable to start service com.dexterous.flutterlocalnotifications.ForegroundService@52b4439 with null: java.lang.NullPointerException: Attempt to invoke virtual method 'java.io.Serializable android.content.Intent.getSerializableExtra(java.lang.String, java.lang.Class)' on a null object reference</li>
 			<li>Isolates: showsUserInterface should be false, but we can't get it to work. Seems like few if any have (seems like they only use it with cancelNotification): https://github.com/search?q=%22showsUserInterface%3A+false%22&type=code with the only exception being here: https://github.com/jenspfahl/EverydayTasks/blob/a85475deae37649ba8ef18978e19270e3ba7ebb6/lib/ui/pages/ScheduledTaskList.dart#L977 Note: If we re-write our notifications (and perhaps callbacks) in native code for better lifecycle management, this issue would be irrelevant.</li>
