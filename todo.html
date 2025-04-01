@@ -82,6 +82,13 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>Need a message_send-like function that allows sending stream or message data to a specific subset of peers within a group, instead of everyone, for audio calls to send only to participating peers.</li>
+			<li>Rewrite anywhere that we pass n+i to pass n+struct instead. Array of struct works fine for everything except messages.</li>
+			<ul>
+				<li>Messages should be a linked list, then there is no realloc being called when loading and deleting messages, making deletion of stream messages low-cost.</li>
+				<li>UI message will have to register its' location with a void pointer to the library message, and library message will have to have a callback trigger to tell UI to delete the UI message before deleting itself.</li>
+				<li>Printing messages by linked list should be possible because we already do it in groups.</li>
+				<li>To consider: use reference counter on group stream messages and delete when too old or all sent.</li>
+			</ul>
 			<li>ENUM_PROTOCOL_FILE_INFO_REQUEST maybe should not be facilitated in public groups.</li>
 			<li>Certain types of group streams (A/V call data, for example) need only be sent to a subset of group peers.</li>
 			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
@@ -252,6 +259,8 @@
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
+			<li>Pete Hegseth function: When a new GROUP_PEER joins, some sort of message needs to be displayed in channel showing who invited them. Perhaps we should generate a non-sendable message type that can be saved into the database and appear as a permanent local notification in the channel.</li>
+			<li>RAM: Get stickers out of RAM.</li>
 			<li>Un-pause option is not available for PM transfers. (May also apply to Flutter?)</li>
 			<li>Messages that come in out-of-order in group chats are printed as the come in, instead of in-order, if chat is open. (May also apply to Flutter?)</li>
 			<li>When deleting group chat history, only sent public messages disappear immediately. The rest disappear when the chat route is re-opened. (Possibly related to above) (May also apply to Flutter?)</li>
@@ -262,7 +271,6 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>RAM: Get stickers out of RAM</li>
 			<li>RAM: Perhaps offload messages as soon as we get to the bottom?</li>
 			<li>Streaming audio: Ideas? The biggest issue is playback. In audio.c, we would have to write a new playback function. In flutter, unknown.</li>
 			<li>Walkie-talkie mode: Auto-play is an issue because multiple messages could come in at the same time and overlap. Could be resolved with 'stream, disgard' and a queue. Unsure whether to have a unified queue for groups, or a per-peer queue. Unified could experience infinite lag, if everyone is talking at once, which would be intolerable, so a per-peer queue and allowing simultaneous playback from multiple peers may be preferable. This would give a true walkie experience, but messages must be sent *live* rather than once fully recorded.</li>
