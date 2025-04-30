@@ -163,6 +163,7 @@
 			<li>Sodium memory management overhead: Check for compile-time flags that could disable the wasted pages except on debug builds. sodium_malloc() wastes too much memory by allocating 4kb of space for each malloc. See <a href="https://github.com/jedisct1/libsodium/blob/master/src/libsodium/sodium/utils.c">HAVE_PAGE_PROTECTION</a></li>
 			<li>Clean up error messages / notices / checkpoints using macro defined levels to determine whether debug level + whether they contain sensitive info.</li>
 			<li>Error messages cannot be inside torx_read/torx_write in case callbacks are guaranteed to be handled asyncronously, by adding them to a queue. Currently, very few are, if any.</li>
+			<li>2025/04/29: After dozens or hundreds of disconnections occuring rapidly, we get "ERROR MEMORY sqlcipher_mlock: mlock() returned -1 errno=12". This is possibly from too many sodium_malloc not being free'd when disconnecting?</li>
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
@@ -281,9 +282,11 @@
 			<li>There could be an UI option to set a debug_file location, and then upon startup have that log pop up (partially as a reminder that it should be disabled).</li>
 			<li>Better notifications for calls</li>
 			<ul>
-				<li>Clicking notifications (both message and calls) should open the proper route (at least in Flutter)</li>
-				<li>Accept / Decline within the notification</li>
-				<li>Peer list should rebuild and display something, or flash, to indicate an waiting call</li>
+				<li>Clicking notifications (both message and calls) should open the proper route (Flutter + GTK)</li>
+				<li>Flutter notifications should cancel after replies are sent (attempts made, no success)</li>
+				<li>Accept / Decline within the notification (GTK)</li>
+				<li>Peer list should rebuild and display something, or flash, to indicate an waiting call (Flutter + GTK)</li>
+				<li>Notifications may need to last longer (Flutter + GTK)</li>
 			</ul>
 			<li>Test and document "Stealth addresses". Facilitated by peer_save(), "Stealth Addresses" functionality is where invalid (non-base32) and excessive (beyond 51 characters) characters are stripped. To utilize, take a 51(?) length TorX-ID, sprinkle invalid characters throughout it as desired, add unlimited length suffix trailing it, and then pass to peer_save. Note: cannot be exactly 56 characters long? Needs review and testing.</li>
 			<li>Have a toggle for kill_delete. Delete or Disable options.</li>
@@ -296,6 +299,7 @@
 		<h4>Low Priority:</h4>
 		<ul>
 			<li>"Tor is running on port ..." could be displayed on settings page or "Tor Port: ..." at the top of Tor Log? (better)</li>
+		<!--	<li>Could perhaps have a button to delete the tor_data_directory, though that may rarely be of benefit and would require a restart of tor.</li> -->
 			<li>"Peer Group Block" lists could be replaced with "Person Groups(or Diversity_2) No_Accounts" Google SVG icons for more standardized and intuitive appearance</li>
 			<li>If a last_message is too long, is there any way we can prevent it from cutting a character in half? We can't simply use multiples of 4 because spaces and newlines.</li>
 			<li>Multi-select messages and "forward" / "delete" / "resend" for them</li>
@@ -405,7 +409,6 @@
 			<li>Lifecycle: RestorationScopeId seems to not be saving our route. Unsure if it saves anything. If we can get it to work, we can use restorationId on TextField and ScrollView (note: security implications of saving to disk in cleartext)</li>
 			<li>Lifecycle needs a full audit, including use of restorationScopeId, initialization_functions(), resumptionTasks()</li>
 			<li>Prevent un-encrypted backups of android data? Most chat apps do this but I'm on the fence because our data is encrypted, and we do want to support history migration. GrapheneOS project has some info that suggests we can block only unencrypted backups.</li>
-			<li>Experiment in Noti with grouping notifications per-user.</li>
 			<li>Comment out any unused color and language strings. Ensure that we don't have any strings not in our languages file.</li>
 			<li>AnimatedBuilder should replace most or all remaining of our setState calls, for efficiency. There are few left.</li>
 			<li>We lose TorX log and Tor log contents every time we .detach, so we might consider to store it in a library defined C pointer so it stays in RAM. We would just need to create the pointer in lib and the remaining work is done in flutter. However, this is kind of contrary to the direction we are going, which is to be able to minimize RAM usage in Android.</li>
