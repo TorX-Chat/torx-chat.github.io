@@ -82,7 +82,7 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
-			<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234);</li>
+			<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte)</li>
 			<li>Rewrite anywhere that we pass n+i to pass n+struct instead. Array of struct works fine for everything except messages.</li>
 			<ul>
 				<li>Messages should be a linked list, then there is no realloc being called when loading and deleting messages, making deletion of stream messages low-cost.</li>
