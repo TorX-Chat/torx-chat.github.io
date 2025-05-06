@@ -81,7 +81,8 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Need a message_send-like function that allows sending stream or message data to a specific subset of peers within a group, instead of everyone, for audio calls to send only to participating peers.</li>
+		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
+			<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234);</li>
 			<li>Rewrite anywhere that we pass n+i to pass n+struct instead. Array of struct works fine for everything except messages.</li>
 			<ul>
 				<li>Messages should be a linked list, then there is no realloc being called when loading and deleting messages, making deletion of stream messages low-cost.</li>
@@ -346,6 +347,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Landscape style images, at least in group PM, end up displaying undersized in an oversized message bubble.</li>
 			<li>Allow adding multiple stickers at once, from filepicker.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
@@ -397,6 +399,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Too long of a nick can overflow a activity bar.</li>
 			<li>Consider other default ringtone/beeps, such as https://freesound.org/people/knufds/sounds/633159/</li>
 			<li>"Resend" is available in different/less circumstances than in GTK</li>
 			<li>Flutter CMakeLists.txt: If jnilibs is populated with files, don't try to copy output binaries into jnilibs because if deleted the build dir and rebuilt a release only, it will be empty.</li>
