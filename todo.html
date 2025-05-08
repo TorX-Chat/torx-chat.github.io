@@ -82,7 +82,7 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
-			<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte)</li>
+		<!--	<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte). NOTE: CHATGPT SAYS THIS IS UNWORKABLE DUE TO ALIGNMENT.</li> -->
 			<li>Rewrite anywhere that we pass n+i to pass n+struct instead. Array of struct works fine for everything except messages.</li>
 			<ul>
 				<li>Messages should be a linked list, then there is no realloc being called when loading and deleting messages, making deletion of stream messages low-cost.</li>
@@ -90,6 +90,7 @@
 				<li>Printing messages by linked list should be possible because we already do it in groups.</li>
 				<li>To consider: use reference counter on group stream messages and delete when too old or all sent.</li>
 			</ul>
+			<li>Every library function should do basic sanity checks (ex: n > -1 && n < threadsafe_read_int(&mutex_global_variable,&max_peer), g > -1 && g < threadsafe_read_int(&mutex_global_variable,&max_group), etc), either with -1 or 0 error level, as appropriate. Diagnosing a -1 shutdown is far easier than a segfault on Android.</li>
 			<li>ENUM_PROTOCOL_FILE_INFO_REQUEST maybe should not be facilitated in public groups.</li>
 			<li>Certain types of group streams (A/V call data, for example) need only be sent to a subset of group peers.</li>
 			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
