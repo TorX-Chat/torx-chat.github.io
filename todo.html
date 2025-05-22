@@ -278,8 +278,8 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>torx_realloc may be used inappropriately in zero_i, onion_deleted_idle, perhaps other places. Copy and shrink isn't what we want. We want to free and re-malloc, without copying, in these places.</li>
 			<li>RAM: Perhaps offload messages as soon as we get to the bottom?</li>
-			<li>Streaming audio: Ideas? The biggest issue is playback. In audio.c, we would have to write a new playback function. In flutter, unknown.</li>
 			<li>Walkie-talkie mode / Touch to speak: When enabled during a voice call, display Participant List and only two buttons: one small one to leave the mode, and a massive one to touch to speak. Touching simply enables microphone, which is otherwise disabled.</li> <!-- Outdated: Auto-play is an issue because multiple messages could come in at the same time and overlap. Could be resolved with 'stream, disgard' and a queue. Unsure whether to have a unified queue for groups, or a per-peer queue. Unified could experience infinite lag, if everyone is talking at once, which would be intolerable, so a per-peer queue and allowing simultaneous playback from multiple peers may be preferable. This would give a true walkie experience, but messages must be sent *live* rather than once fully recorded.</li> -->
 			<li>There could be an UI option to set a debug_file location, and then upon startup have that log pop up (partially as a reminder that it should be disabled).</li>
 			<li>Better notifications for calls</li>
@@ -321,6 +321,7 @@
 		<h3>TODO List for GTK4 client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Streaming audio: We are sending data even when it is silence. (Avoiding this in Flutter via getAmplitude, GStreamer ???)</li>
 			<li>transfer_progress_idle can segfault on t_peer[n].t_file[f].progress_bar if messages are deleted. We should be nulling t_peer[n].t_file[f].progress_bar when deleting file messages.</li>
 			<li>Clearing group messages only makes the outbound group messages immediately disappear and doesn't effect the GROUP_PEER messages.</li>
 			<li>Need to list appropriate GStreamer package as a build dependancy</li>
@@ -354,7 +355,7 @@
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Vertical mode: consider putting Send button below the emoji and attach buttons, or simply hide buttons other than Send while typing (like Flutter client).</li>
 			<li>Memory leakage: Free memory. Eliminate memory leaks so that it can valgrind 0. g_free, g_object_free(), etc Unsure how to handle sensitive things.</li>
-			<li>Review any _swapped( and instead set proper args for given ::signal) (note: if signal can't be found in GTK docs, check gobject docs)</li>
+			<li>Review any _swapped( and instead set proper args for given ::signal) (note: if signal can't be found in GTK docs, check gobject docs). Many global widgets may be able to be eliminated in this manner (especially buttons, ie "clicked").</li>
 			<li>Have some clang specific compile flags. Could add more. See CMakeLists.txt.</li>
 			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
 			<li>Partially mitigated by GTK_FACTORY_BUG=1: Loading chats is horribly slow until gtk_list_base_set_anchor_max_widgets stops being passed GTK_LIST_VIEW_MAX_LIST_ITEMS as n_center, because it builds 205 widgets.</li>
@@ -374,7 +375,7 @@
 		<h3>TODO List for Flutter client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Outgoing voice messages are momentarily cached on disk: record.start( needs replacing with record.startStream(, but currently the "record" package has bugs</li>
+			<li>Streaming audio: not recording when route is not open or screen is closed</li>
 			<li>Values passed to changeNotifier(s) are inconsistent and arbitrary because in most cases we don't use them. We should universally standardize them and utilize them with $changeNotifier.section.$value</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
 			<ul>
