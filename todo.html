@@ -333,6 +333,7 @@
 			<li>GTK_FACTORY_BUG mitigation has a side effect: messages are not reloaded until application restart, which means that modifying peernicks of group members do not change nicks within loaded messages until restart. Mitigate by re-loading effected messages.</li>
 			<li>Bug: Messages that are larger than the chat window cannot be long-pressed properly (so cannot copy, etc). Issue is caused by the popover being spawned at the top of the message rather than the point of long-press.</li>
 			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
+			<li>Idle functions shouldn't call idle functions? Valgrind-race/Helgrind throws some perhaps false positives for race conditions as a result. Notably, we do it for scroll_func_idle / scroll_func_idle_inverted.</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Create .rpm file + RedHat repo</li>
 			<li>Create .??? file + MacOS brew.sh repo</li> <!-- ??? librewolf is on brew -->
