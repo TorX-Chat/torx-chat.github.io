@@ -99,7 +99,8 @@
 			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
 			<li>GROUP_OFFER_ACCEPT: ONLY respond IF we verify that we already sent this peer an UNUSED invitation (perhaps we should save this with extraneous), otherwise could be issues (ie, a malicious peer could accept multiple times and bring in a bunch of people)</li>
 			<li>iOS (Orbot) / System Tor: We need to re-write tor_call and v3auth_ll so that all calls are on a single connection and ADD_ONION does not utilize "Detached". See Tor's control-spec.txt. That will enable us to run safely without control_password. However it will not achieve Orbot compatibility at least on Android (which starts up with a random CTRL_PORT). We could work with their devs to get them to resolve the issue.</li>
-			<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li>
+		<!--	<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li> -->
+			<li>TAKEOWNERSHIP can be used on the Tor control connection to kill Tor if the control connection drops. NOTE: This should *not* be used if we have set the client to an already-running system Tor (ie if we set the port instead of the path).</li>
 			<li>Consider the viability of (or move towards) full-duplex messages of all types, and treating files nearly the same as any other message.</li>
 			<ul>
 				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
@@ -375,7 +376,11 @@
 		<h3>TODO List for Flutter client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Utilize void *ui_data to store data that we don't want to be lost during UI disposal, such as (???)</li>
+			<li>Utilize void *ui_data to store data that we don't want to be lost during UI disposal / .detach, such as:</li>
+			<ul>
+				<li>Tor Log</li>
+				<li>TorX Log</li>
+			</ul>
 			<li>Streaming audio: not recording when route is not open or screen is closed</li>
 			<li>Values passed to changeNotifier(s) are inconsistent and arbitrary because in most cases we don't use them. We should universally standardize them and utilize them with $changeNotifier.section.$value</li>
 			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
@@ -417,7 +422,6 @@
 			<li>Prevent un-encrypted backups of android data? Most chat apps do this but I'm on the fence because our data is encrypted, and we do want to support history migration. GrapheneOS project has some info that suggests we can block only unencrypted backups.</li>
 			<li>Comment out any unused color and language strings. Ensure that we don't have any strings not in our languages file.</li>
 			<li>AnimatedBuilder should replace most or all remaining of our setState calls, for efficiency. There are few left.</li>
-			<li>We lose TorX log and Tor log contents every time we .detach, so we might consider to store it in a library defined C pointer so it stays in RAM. We would just need to create the pointer in lib and the remaining work is done in flutter. However, this is kind of contrary to the direction we are going, which is to be able to minimize RAM usage in Android.</li>
 		</ul>
 	<!--	<h4>Possibly no longer relevant:</h4>
 		<ul>
