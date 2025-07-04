@@ -61,11 +61,12 @@
 		<ul>
 			<li>Peer struct is currently an array of struct; there may be benefits to moving it to a linked list, facilitating more of an OOP approach, though an incredible amount work would be involved.</li>
 			<li>Putting in a "wrong" password could be made impossible. We could accept any password and just create a new config file. When unlocking, we could try the hashed password (decryption_key) against all config files.</li>
-			<li>Git submodules vs ExternalProjects_Add vs other?</li>
+			<li>Git submodules vs ExternalProject_Add vs other? ExternalProject_Add, including remote downloads, is going to be incompatible with certain packaging methods (such as .deb).</li>
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
 			<li>Use timezone info to determine default torrc? (Briar does this. This could really be a UI thing, though we do have the censored_region variable in lib). Timezone + language would be more effective.</li>
 			<li>File transfers: fallocate(linux)/lseek(linux) or pre-allocate files in some sort of null state. Would have to do this in OS specific manners https://devblogs.microsoft.com/oldnewthing/20160714-00/?p=93875</li>
 			<li>Could allow protocols to require an acknowledgement (ACK) of receipt by sending a fnv1a unsalted hash (uint32) back. Using a 64 byte checksum is unnecessary and wastes RAM space in the message struc, HOWEVER a truncated SHA3 may be better because it would be able to handle larger message sizes, because it doesn't rely on loading the entire message into stack... but we could easily re-write the fnv1a hasher function to use the heap. Either method does not require both sides to keep a shared index number of any type. Would need to store hashes for sent messages of this type in struct so that confirmation could rapidly be determined without having to re-hash every such message. Alternatively, we could just use time:nstime, time:nstime + hash, or time:nstime + length.</li>
+			<li>The value for ConstrainedSockSize could be causing slow file transfers</li>
 		<!--	<li>M****o-cli integration (not before full release / 2025)</li>
 			<ul>
 				<li>Might be difficult to implement for mobile if unsafe shutdowns of M****o cause b********n indexing corruption. However M****o-cli offers remote b********n options that would probably be safe from unsafe shutdowns.</li>
@@ -98,9 +99,7 @@
 			<li>message_resend hasn't been tested in a while. Test with public groups, private groups(signed), p2p.</li>
 			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
 			<li>GROUP_OFFER_ACCEPT: ONLY respond IF we verify that we already sent this peer an UNUSED invitation (perhaps we should save this with extraneous), otherwise could be issues (ie, a malicious peer could accept multiple times and bring in a bunch of people)</li>
-			<li>iOS (Orbot) / System Tor: We need to re-write tor_call and v3auth_ll so that all calls are on a single connection and ADD_ONION does not utilize "Detached". See Tor's control-spec.txt. That will enable us to run safely without control_password. However it will not achieve Orbot compatibility at least on Android (which starts up with a random CTRL_PORT). We could work with their devs to get them to resolve the issue.</li>
 		<!--	<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li> -->
-			<li>TAKEOWNERSHIP can be used on the Tor control connection to kill Tor if the control connection drops. NOTE: This should *not* be used if we have set the client to an already-running system Tor (ie if we set the port instead of the path).</li>
 			<li>Consider the viability of (or move towards) full-duplex messages of all types, and treating files nearly the same as any other message.</li>
 			<ul>
 				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
@@ -147,7 +146,6 @@
 			</ul>
 			<li>CMakeLists.txt:</li>
 			<ul>
-				<li>Needs to have install directive (LIBRARY DESTINATION lib), to allow independent builds and installs of .so file, without re-compiling UIs.</li>
 				<li>set(SSL_ARCH linux-x86_64) is hardcoded, except on android. will be issues on *pi, postmarketOS, macbooks, etc.</li>
 				<li>CMakeLists.txt files can be ran through AI. Add debug messages with message(STATUS hello) and run with cmake --trace for debugging.</li>
 			</ul>
@@ -155,7 +153,7 @@
 			<li>Due to message_prep existing within message_send, and only one g being passed around (no distinction between "relevant g" and "target g"), it's impossible to send a group offer into a group.</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw). We may also need to have a time-deletion where after a certain number of seconds we just consider it no longer relevant.</li>
-			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" "offline" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev</li>
+			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" "offline" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev. NOTE: It IS related to Prop224: https://gitlab.torproject.org/tpo/core/tor/-/issues/29054 https://gitlab.torproject.org/tpo/core/tor/-/issues/18098 ; It is NOT related to OfflineMasterKey (1/0) torrc option https://gitlab.torproject.org/legacy/trac/-/wikis/doc/TorRelaySecurity/OfflineKeys</li>
 			<li>GROUP FILE TRANSFER Documentation: Outbound uses peer_n fd for disk reads, Inbound uses group_ctrl fd for disk writes. When receiving file request, it appears we store outbound date in the group_peer_n. This needs to be documented/understood. When changing file status in process_pause_cancel, we might need to iterate through the relevant group_peer_n and set their status too? idk if we store status there or only transfer amount.</li>
 			<li>We can't support uint64_t file sizes because ftell/fseek only support long int. Unsure what to do about this. It affects our file transfer protocols.</li>
 			<li>accept_automatically. Can either be a toggle or a size slider. size_t is probably most logical. Could also have a list of accepted filetypes. NOTE: Enabling this option will require a check for download_dir. Also, this option should could be DANGEROUS for insecure platforms like Windows/OSX/iOS/Android, where CSAM scanning exists.</li>
@@ -170,6 +168,10 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Headers: Certain macros, struct models, functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h</li>
+			<li>Known bug (with effective work-around implemented already): After authenticating, our first command to tor_call (both binary Tor and system Tor) fails with 510 Unrecognized command "".</li>
+			<li>Orbot compatibility: At least on Android, Orbot starts up with a random CTRL_PORT. We could work with their devs to get them to resolve the issue.</li>
+			<li>Global variables could each have their own mutex rather than using mutex_global_variable. However, the extra processing required would probably negate any benefit since mutex_global_variable should only be very briefly held anyway.</li>
 			<li>A "getter_exists" function could exist, which would at minimum be used for pointers to see if they are NULL. Could error out if not a pointer, or do some other form of checks like a zero check on the first byte (for onions, peeronions) or is_null (for hashes, other arrays).</li>
 			<li>Change 'n' to 'file_n' in file related functions that are passed n,f pairs or n,f,peer_n. n and file_n must NEVER be used together in a function, to prevent confusion/mistakes. Relevant variable names: file_n, target_n, group_n, peer_n, etc.</li>
 			<li>If messages.db is deleted or message history is deleted, _ENTRY_REQUEST _FAIL messages will be deleted, which means public groups we are trying to join will never be joined.</li>
@@ -208,7 +210,7 @@
 			<li>Where multiple getter functions occur in a block, it would be more efficient to manually lock/unlock once.</li>
 			<li>Consider implementation of Proof of Work https://spec.torproject.org/hspow-spec/v1-equix.html for multiple use IDs, when sufficiently mature</li>
 			<li>Convert or eliminate remaining ~100 printf to error_printf</li>
-			<li>Takedown_onion must call disconnect_forever in a threadsafe manner. We've tried everything (evbuffer_lock, event_base_once, etc) and can't find a way.</li>
+			<li>takedown_onion must call disconnect_forever in a threadsafe manner. We've tried everything (evbuffer_lock, event_base_once, etc) and can't find a way.</li>
 			<li>file_init() calculates a checksum every time it offers a file. We have modification time now but we don't use it for anything.</li>
 			<li>Seems like old file descriptors get closed. If nothing is written in a long time, fd might get closed. Do we have any long-term fd?</li>
 			<li>File descriptor leaks and limitations: ulimit -n shows we can only have 1024 file descriptors open at once. That's going to limit the potential of group chats. If we get near the limit, we could shed outbound (sendfd) connections? Not a great solution.</li>
@@ -323,6 +325,7 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>Streaming audio: We are sending data even when it is silence. (Avoiding this in Flutter via getAmplitude, GStreamer ???)</li>
+			<li>System Tor / Binary Tor switching: Cannot change the ports properly because changes trigger multiple Tor restarts (ui_spin_change / ui_tor_control_password_change), which cause ports to appear utilized.</li>
 			<li>transfer_progress_idle can segfault on t_peer[n].t_file[f].progress_bar if messages are deleted. We should be nulling t_peer[n].t_file[f].progress_bar when deleting file messages.</li>
 			<li>Clearing group messages only makes the outbound group messages immediately disappear and doesn't effect the GROUP_PEER messages.</li>
 			<li>Need to list appropriate GStreamer package as a build dependancy</li>
@@ -358,7 +361,7 @@
 			<li>Vertical mode: consider putting Send button below the emoji and attach buttons, or simply hide buttons other than Send while typing (like Flutter client).</li>
 			<li>Memory leakage: Free memory. Eliminate memory leaks so that it can valgrind 0. g_free, g_object_free(), etc Unsure how to handle sensitive things.</li>
 			<li>Review any _swapped( and instead set proper args for given ::signal) (note: if signal can't be found in GTK docs, check gobject docs). Many global widgets may be able to be eliminated in this manner (especially buttons, ie "clicked").</li>
-			<li>Have some clang specific compile flags. Could add more. See CMakeLists.txt.</li>
+			<li>CMakeLists.txt: Have some clang specific compile flags. Could add more.</li>
 			<li>Fully Mitigated by GTK_FACTORY_BUG=1: g_list_store_insert/splice in GTK4 are horribly inefficient until https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/7420 gets merged</li>
 			<li>Partially mitigated by GTK_FACTORY_BUG=1: Loading chats is horribly slow until gtk_list_base_set_anchor_max_widgets stops being passed GTK_LIST_VIEW_MAX_LIST_ITEMS as n_center, because it builds 205 widgets.</li>
 			<li>INVERSION_TEST is necessary until https://gitlab.gnome.org/GNOME/gtk/-/issues/4680 gets resolved</li>
@@ -384,13 +387,6 @@
 			</ul>
 			<li>Streaming audio: not recording when route is not open or screen is closed</li>
 			<li>Values passed to changeNotifier(s) are inconsistent and arbitrary because in most cases we don't use them. We should universally standardize them and utilize them with $changeNotifier.section.$value</li>
-			<li>CMakeLists.txt: Depreciate the BUILD_BINARIES argument in favor of checking if they are already built.</li>
-			<ul>
-				<li>Passing environmental variables to CMake through Flutter seems unreliable at best (may only be working when building re-binaries, with clean directories, at best).</li>
-				<li>Resolve issues / causes of unnecessary rebuilds (libevent related issue). Alternatively, BUILD_ALWAYS TRUE or otherwise force clean rebuild of libevent.</li>
-				<li>Allow forcing of rebuilds for when deps change? CMake can ideally handle this</li>
-			</ul>
-			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
 			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
 			<li>Can we prevent other applications from knowing this application is installed?</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections. We may need to fork all our dependencies to disable any firebase reference or remote connections.</li>
@@ -398,6 +394,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
 			<li>Need to do more testing with horizontal views. Known issue: Deleting stuff on Home page is impossible in horizontal mode. Other stuff untested.</li>
 			<li>Rebuilds are still too frequent; mostly when bringing keyboard up, NOT caused by use of MediaQuery (tested by eliminating all). https://github.com/flutter/flutter/issues/105184</li>
 			<li>Crash: Likely related to but NOT caused by android:stopWithTask="false" in AndroidManifest.xml? Read: https://stackoverflow.com/questions/19568315/how-to-handle-running-service-when-app-is-killed-by-swiping-in-android Occurs occassionally when application is in the background, especially when other high-RAM applications are running https://stackoverflow.com/questions/44425584/context-startforegroundservice-did-not-then-call-service-startforeground E/AndroidRuntime(12140): android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{52682ad u0 com.torx.chat/com.dexterous.flutterlocalnotifications.ForegroundService}</li>
@@ -411,7 +408,7 @@
 			<li>Too long of a nick can overflow a activity bar.</li>
 			<li>Consider other default ringtone/beeps, such as https://freesound.org/people/knufds/sounds/633159/</li>
 			<li>"Resend" is available in different/less circumstances than in GTK</li>
-			<li>Flutter CMakeLists.txt: If jnilibs is populated with files, don't try to copy output binaries into jnilibs because if deleted the build dir and rebuilt a release only, it will be empty.</li>
+			<li>CMakeLists.txt: If jnilibs is populated with files, don't try to copy output binaries into jnilibs because if deleted the build dir and rebuilt a release only, it will be empty.</li>
 			<li>Can't change app name on the fly, but can change icon. Could use it to notify user of messages or put alternate icon option (calculator, or something people never use). "The calculator theoretically opens chat but it doesn't work anymore. They said it requires entering a specific calculation," Micay said.</li>
 			<li>Should use gallery with photo_view to allow swipping back/forward to see other images in PhotoView.</li>
 			<li>autoRunOnBoot: true (foreground task) + fix BootBroadcastReceiver.kt, then have a toggle in settings page for both.</li>
