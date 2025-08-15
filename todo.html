@@ -82,12 +82,13 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li>
 		<!--	<li>Version 3: Null terminated protocols pass the null terminator over the network. </li> NO. it's so they can have their signatures verified and be re-sent unchanged to other peers without a having to do a memcpy / re-arrangement. passing the null byte over the network was determined to be trivial in comparison to making special carveouts in how we download / store / verify / resend messages. -->
 			<li>Headers: Certain macros, struct models (what about global structs like peer itself?), functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h. This will reduce the frequency of API/ABI changes. Also, torx_insecure_malloc should be renamed torx_malloc_insecure, and things like evutil_closesocket and sodium_memzero should be abstracted away.</li>
 		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
 		<!--	<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte). NOTE: CHATGPT SAYS THIS IS UNWORKABLE DUE TO ALIGNMENT.</li> -->
 			<li>File Transfers: should be in /extras/</li>
-			<li>-D FILE_TRANSFER -D STICKERS -D QR_GENERATOR -D AUDIO_CALL should be enabled by default and disabled via NO_ prefix. This will be forward-compatible as the old passed args will be unused.</li>
+			<li>call_invalid / sticker_invalid (including locks) can be renamed and expanded to invalid_peer/invalid_message/invalid_file/invalid_group, but maybe doing them *within locks* would be significantly better, and not exposing them to UI. We don't need to expose them to UI if every library function does a check. Alternatively we could have functions with locks to wrap them.</li>
 			<li>Integer getter functions in thread_safety.c should be re-written similar to getter_call_union's usage. Initial focus should be elimination of macros.</li>
 			<li>Rewrite anywhere that we pass n+i to pass n+struct instead. Array of struct works fine for everything except messages.</li>
 			<ul>
@@ -131,6 +132,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>AUDIO_STREAM could be MEDIA_STREAM and a suffix could be added for type (_VIDEO, _AUDIO, idk), but if we want to truly support arbitrary types, we need to have a series of EXCLUSIVE_TYPE MEDIA_CALL protocol_registration toggles? Ex: EXCLUSIVE_MEDIA(_CALL_JOIN(_PRIVATE)(_TYPE)/)(_DATA) If necessary, cache retrieval functions could be passed a _DATA_ protocol to retrieve that type (so that audio can be retrieved seperately from video, etc).</li>
 			<li>Consider renaming getter_uint32 --> getter_peer_uint32, etc, setter --> setter_peer, threadsafe_read_ --> getter_global_, threadsafe_write --> setter_global. Also consider using offsets (or a variation of it) struct on global variables so that getter_global / setter_global can take strings as arguments, instead of mutex and pointer, and do anticipated_size sanity checks.</li>
 			<li>2025/05/27 Possible Tor bug (verify with clean client, control port): del_onion fails on odd attempts (1,3,5,...) and succeeds on even attempts (2,4,6,...), even though each is preceded by an ADD_ONION.</li>
 			<li>(Easy fix) In sql_populate_message, if(reverse) and if(protocol == ENUM_PROTOCOL_FILE_REQUEST), we should probably avoid "status = " changes to _ACCEPTED.</li>
@@ -332,6 +334,12 @@
 		<h3>TODO List for GTK4 client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Stickers:</li>
+			<ul>
+				<li>Update stickers when saved/deleted.</li>
+				<li>Static gifs except on mouseover (at least make it a compile option).</li>
+				<li>Allow adding multiple stickers at once, from filepicker.</li>
+			</ul>
 			<li>Streaming audio: We are sending data even when it is silence. (Avoiding this in Flutter via getAmplitude, GStreamer ???)</li>
 			<li>System Tor / Binary Tor switching: Cannot change the ports properly because changes trigger multiple Tor restarts (ui_spin_change / ui_tor_control_password_change), which cause ports to appear utilized.</li>
 			<li>transfer_progress_idle can segfault on t_peer[n].t_file[f].progress_bar if messages are deleted. We should be nulling t_peer[n].t_file[f].progress_bar when deleting file messages.</li>
@@ -364,7 +372,6 @@
 		<h4>Low Priority:</h4>
 		<ul>
 			<li>Landscape style images, at least in group PM, end up displaying undersized in an oversized message bubble.</li>
-			<li>Allow adding multiple stickers at once, from filepicker.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
 			<li>Vertical mode: consider putting Send button below the emoji and attach buttons, or simply hide buttons other than Send while typing (like Flutter client).</li>
