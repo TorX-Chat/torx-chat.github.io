@@ -86,7 +86,6 @@
 			<li>Headers: Certain macros, struct models (what about global structs like peer itself?), functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h. This will reduce the frequency of API/ABI changes. Also, torx_insecure_malloc should be renamed torx_malloc_insecure, and things like evutil_closesocket and sodium_memzero should be abstracted away.</li>
 		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
 		<!--	<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte). NOTE: CHATGPT SAYS THIS IS UNWORKABLE DUE TO ALIGNMENT.</li> -->
-			<li>Stickers: should be shifted to library (-D STICKERS) and be offloadable. Note: currently stickers are loaded through (resumptionTasks ->)sql_populate_setting(0)</li>
 			<li>File Transfers: should be in /extras/</li>
 			<li>-D FILE_TRANSFER -D STICKERS -D QR_GENERATOR -D AUDIO_CALL should be enabled by default and disabled via NO_ prefix. This will be forward-compatible as the old passed args will be unused.</li>
 			<li>Integer getter functions in thread_safety.c should be re-written similar to getter_call_union's usage. Initial focus should be elimination of macros.</li>
@@ -177,6 +176,8 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>We could experimentally move towards putting all libevent work on a event loop, as a trial for de-threading</li>
+			<li>OSX Builds (also applies to Flutter) won't work without a fix like this https://github.com/openssl/openssl/issues/8941#issuecomment-880386095</li>
 			<li>Known bug (with effective work-around implemented already): After authenticating, our first command to tor_call (both binary Tor and system Tor) fails with 510 Unrecognized command "".</li>
 			<li>Orbot compatibility: At least on Android, Orbot starts up with a random CTRL_PORT. We could work with their devs to get them to resolve the issue.</li>
 			<li>Global variables could each have their own mutex rather than using mutex_global_variable. However, the extra processing required would probably negate any benefit since mutex_global_variable should only be very briefly held anyway.</li>
@@ -278,7 +279,6 @@
 			<li>Participating List popover should also be re-built when a peer is speaking (to flash badge), and in GTK when someone clicks "mic/mic_off" "volume_up/volume_off" icons to toggle peer specific setting in Participant List (currently it is static).</li>
 			<li>Pete Hegseth function: When a new GROUP_PEER joins, some sort of message needs to be displayed in channel showing who invited them. Perhaps we should generate a non-sendable message type that can be saved into the database and appear as a permanent local notification in the channel.</li>
 			<li>Missed call: should also be displayed as a non-sendable message in channel, similar to Pete Hegseth function. Completed calls probably don't need to be noted.</li>
-			<li>RAM: Get stickers out of RAM, but first move stickers to -DSTICKERS in library (like QR_GENERATOR) so only one codebase need be maintained.</li>
 			<li>Un-pause option is not available for PM transfers. (May also apply to Flutter?)</li>
 			<li>Messages that come in out-of-order in group chats are printed as the come in, instead of in-order, if chat is open. (May also apply to Flutter?)</li>
 			<li>When deleting group chat history, only sent public messages disappear immediately. The rest disappear when the chat route is re-opened. (Possibly related to above) (May also apply to Flutter?)</li>
@@ -389,17 +389,14 @@
 		<h3>TODO List for Flutter client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Utilize void *ui_data to store data that we don't want to be lost during UI disposal / .detach, such as:</li>
-			<ul>
-				<li>Tor Log</li>
-				<li>TorX Log</li>
-			</ul>
+			<li>Need to have a manner of backing up because overwriting with APKs built by different sources is deleting stored data. Also, prevent that from accidentally happening without warning?</li>
 			<li>Streaming audio: not recording when route is not open or screen is closed</li>
 			<li>Values passed to changeNotifier(s) are inconsistent and arbitrary because in most cases we don't use them. We should universally standardize them and utilize them with $changeNotifier.section.$value</li>
 			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
 			<li>Can we prevent other applications from knowing this application is installed?</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections. We may need to fork all our dependencies to disable any firebase reference or remote connections.</li>
 			<li>Consider having a popup when adding something to clipboard. The clipboard would have a "Clear clipboard" and "Exit" option, along with a warning about other applications being able to steal clipboard contents. In some softwares (ie password managers), after ~45 seconds, it will clear the clipboard.</li>
+			<li>We don't use cache directory(?) but on one device we have a lot of cache there. Could it be from crashes? restoreState?</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
