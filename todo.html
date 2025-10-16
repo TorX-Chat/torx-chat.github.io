@@ -37,6 +37,7 @@
 		<a href="#ui">UI</a>
 		<a href="#gtk4">GTK4</a>
 		<a href="#flutter">Flutter</a>
+		<a href="#website">Website</a>
 	</nav>
 	<section id="schedule">
 		<h1>Project-Wide Unified TODO List / Schedule</h1>
@@ -82,6 +83,12 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Identity correlation through targetted unique sticker promulgation (see top of stickers.c)</li>
+			<ul>
+				<li>Need to redundantly request sticker if peer and their group is not on our sticker[s].peers list</li>
+				<li>Need to add STICKER_DATA sender to sticker[s].peers list after successful checksum</li>
+				<li>Need to add sticker[s].peers to sticker-gif-$CHECKSUM-$NoP-$PEERS (suffix peer list on the name of the sticker setting. Be sure to start with number of peers, otherwise further suffixes will not be possible)</li>
+			</ul>
 			<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li>
 		<!--	<li>Version 3: Null terminated protocols pass the null terminator over the network. </li> NO. it's so they can have their signatures verified and be re-sent unchanged to other peers without a having to do a memcpy / re-arrangement. passing the null byte over the network was determined to be trivial in comparison to making special carveouts in how we download / store / verify / resend messages. -->
 			<li>Headers: Certain macros, struct models (what about global structs like peer itself?), functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h. This will reduce the frequency of API/ABI changes. Also, torx_insecure_malloc should be renamed torx_malloc_insecure, and things like evutil_closesocket and sodium_memzero should be abstracted away.</li>
@@ -128,6 +135,27 @@
 				<li>Alternative mitigation method offering full-vanguards (Note: abandonware) https://github.com/mikeperry-tor/vanguards</li>
 				<li>Tor >= 0.4.7.0 already has built-in support for Vanguards-lite: https://spec.torproject.org/vanguards-spec/vanguards-lite.html</li>
 			</ul>
+			<li>Must consider eliminating (and prohibiting) persistent connections.</li>
+			<ul>
+				<li>Online status (within 180 minutes) can be obtained via `HSFETCH <OnionID>` + (wait seconds) + `GETINFO version hs/client/desc/id/<OnionID>`</li>
+				<ul>
+					<li>ISSUE: After the service is down, the descriptor stays BOTH in local cache *and* on the HSDir until expiry (180 minutes from publication). This makes it USELESS for verifying online status without establishing a circuit.</li>
+					<li>Apparently it can set 30-720 minutes, relative to time of upload(?), presumably without HSDir rate limits. DANGER: This data seems not encrypted, so modifying this would cause TorX-IDs to stand out in HSDirs. https://spec.torproject.org/rend-spec/hsdesc-outer.html</li>
+				</ul>
+				<li>Without online status, we couldn't give a "last online" (except within 3 hours), but we could still continually attempt delivery of messages (like WhatsApp, SimpleX).</li>
+				<ul>
+					<li>Certain types of messages, such as a file transfer or stream, would request the peer to bring up their connection (until the transfer/stream ends, or a timeout) for full duplex.</li>
+					<li>Abuse from peers (bringing up connection without sending data, or requesting full duplex and hitting timeout) would need to be tracked. Doing it (3+ times?) could result in us taking down our onion for a number of hours (going black color?).</li>
+				</ul>
+				<li>We would need to stagger the rate in which we bring onions online on startup.</li>
+				<ul>
+					<li>The number of minutes to stagger over could be UI configurable. (Default: 15? Relative to average runtime? Lower on mobile?)</li>
+				</ul>
+				<li>Major remaining question: Can all our efforts be voided by malicious peers with modified Tor clients requesting `rendezvous` without establishing a TCP connection over it?</li>
+				<ul>
+					<li>Assuming YES, we might need to be able to monitor when RELAY_COMMAND_INTRO_ESTABLISHED relay cells are received (Is this even possible without modifying Tor? Maybe this should wait for Arti).</li>
+				</ul>
+			</ul>
 			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
@@ -163,7 +191,7 @@
 			<li>Due to message_prep existing within message_send, and only one g being passed around (no distinction between "relevant g" and "target g"), it's impossible to send a group offer into a group.</li>
 			<li>Search (again) for ]; and ] = { then ensure zero'd.</li>
 			<li>Streaming a group message is going to be a message struct bloat issue because, unlike other stream messages, upon outbound send it is not deleted from group_ctrl (the group_ctrl n,i is not zero_i'd). The solution is to somehow track when all the attempts are done (perhaps in message_send) and then zero_i it (see: sfaoij2309fjfw). We may also need to have a time-deletion where after a certain number of seconds we just consider it no longer relevant.</li>
-			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" "offline" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev. NOTE: It IS related to Prop224: https://gitlab.torproject.org/tpo/core/tor/-/issues/29054 https://gitlab.torproject.org/tpo/core/tor/-/issues/18098 ; It is NOT related to OfflineMasterKey (1/0) torrc option https://gitlab.torproject.org/legacy/trac/-/wikis/doc/TorRelaySecurity/OfflineKeys</li>
+			<li>Multi-Device / Blinded keys. Use the nonce method to generate blinded keys. Do it using onion_gen.c Upload it using HSPOST. See src/feature/hs/hs_common.c for creation of blinded keys. See any mentions of "blind" "period" "time" "offline" in the src. I think HSPOST is somehow combined with ADD_ONION to publish? Unsure and will need to ask #tor-dev. NOTE: It IS related to Prop224: https://gitlab.torproject.org/tpo/core/tor/-/issues/29054 https://gitlab.torproject.org/tpo/core/tor/-/issues/18098 https://tpo.pages.torproject.net/core/torspec/rend-spec/deriving-keys.html#deriving-blinded-keys-and-subcredentials-subcred ; It is NOT related to OfflineMasterKey (1/0) torrc option https://gitlab.torproject.org/legacy/trac/-/wikis/doc/TorRelaySecurity/OfflineKeys</li>
 			<li>GROUP FILE TRANSFER Documentation: Outbound uses peer_n fd for disk reads, Inbound uses group_ctrl fd for disk writes. When receiving file request, it appears we store outbound date in the group_peer_n. This needs to be documented/understood. When changing file status in process_pause_cancel, we might need to iterate through the relevant group_peer_n and set their status too? idk if we store status there or only transfer amount.</li>
 			<li>We can't support uint64_t file sizes because ftell/fseek only support long int. Unsure what to do about this. It affects our file transfer protocols.</li>
 			<li>accept_automatically. Can either be a toggle or a size slider. size_t is probably most logical. Could also have a list of accepted filetypes. NOTE: Enabling this option will require a check for download_dir. Also, this option should could be DANGEROUS for insecure platforms like Windows/OSX/iOS/Android, where CSAM scanning exists.</li>
@@ -291,6 +319,12 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Network health monitoring (Unsure whether to implement via new callback or utilize tor_log_cb, but then it could slow UI rebuilds):</li>
+			<ul>
+				<li>uint8_t bootstrap-phase = 0-100; # Can be directly displayed by UI (Red below 30%, orange 30% to 100%)</li>
+				<li>uint8_t circuit-established = 0/1; # Can be used by UI clients to turn connectivity % to GREEN (after 100%).</li>
+				<li>Method: When Tor messages received, trigger `GETINFO status/bootstrap-phase` `GETINFO status/circuit-established` (also, not using: `GETINFO network-liveness`)</li>
+			</ul>
 			<li>(Important on Android) Have a button to delete the tor_data_directory on the Tor Log page, which would rarely be of benefit and would require a restart of Tor.</li>
 			<li>torx_realloc may be used inappropriately in zero_i, onion_deleted_idle, perhaps other places. Copy and shrink isn't what we want. We want to free and re-malloc, without copying, in these places.</li>
 			<li>RAM: Perhaps offload messages as soon as we get to the bottom?</li>
@@ -407,6 +441,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Investigate whether we are utlizing or could benefit from optimization: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization#keep-code</li>
 			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
 			<li>Need to do more testing with horizontal views. Known issue: Deleting stuff on Home page is impossible in horizontal mode. Other stuff untested.</li>
 			<li>Rebuilds are still too frequent; mostly when bringing keyboard up, NOT caused by use of MediaQuery (tested by eliminating all). https://github.com/flutter/flutter/issues/105184</li>
@@ -437,5 +472,12 @@
 	<!--	<h4>Possibly no longer relevant:</h4>
 		<ul>
 		</ul> -->
+	<section id="website">
+		<h3>TODO List for Website/Github/Promotion:</h3>
+		<ul>
+			<li>Get listed on: https://privacyspreadsheet.com/messaging-apps</li>
+			<li>Add FUNDING.yml https://github.com/tonyp7/esp32-wifi-manager/blob/master/.github/FUNDING.yml</li>
+			<li>Figure out how we will archive old versions of .apk files in a manner compatible with F-Droid https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github?platform=linux</li>
+		</ul>
 </body>
 </html>
