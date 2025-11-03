@@ -81,20 +81,18 @@
 		</ul>
 	<section id="library">
 		<h3>TODO List for TorX Library:</h3>
+		<h4>Scheduled for next major version (3):</h4>
+		<ul>
+			<li>Consider ceasing to null terminate string based protocols</li>
+		</ul>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Identity correlation through targetted unique sticker promulgation (see top of stickers.c)</li>
-			<ul>
-				<li>Need to redundantly request sticker if peer and their group is not on our sticker[s].peers list</li>
-				<li>Need to add STICKER_DATA sender to sticker[s].peers list after successful checksum</li>
-				<li>Need to add sticker[s].peers to sticker-gif-$CHECKSUM-$NoP-$PEERS (suffix peer list on the name of the sticker setting. Be sure to start with number of peers, otherwise further suffixes will not be possible)</li>
-			</ul>
 			<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li>
+			<li>Sending many files leads to race conditions on n,i that result in `Message's p_iter is <0 which indicates it is deleted or buggy.(0/1)` and `Send_prep message already sent:`</li>
 		<!--	<li>Version 3: Null terminated protocols pass the null terminator over the network. </li> NO. it's so they can have their signatures verified and be re-sent unchanged to other peers without a having to do a memcpy / re-arrangement. passing the null byte over the network was determined to be trivial in comparison to making special carveouts in how we download / store / verify / resend messages. -->
 			<li>Headers: Certain macros, struct models (what about global structs like peer itself?), functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h. This will reduce the frequency of API/ABI changes. Also, torx_insecure_malloc should be renamed torx_malloc_insecure, and things like evutil_closesocket and sodium_memzero should be abstracted away.</li>
 		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
 		<!--	<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte). NOTE: CHATGPT SAYS THIS IS UNWORKABLE DUE TO ALIGNMENT.</li> -->
-			<li>File Transfers: should be in /extras/</li>
 			<li>call_invalid / sticker_invalid (including locks) can be renamed and expanded to invalid_peer/invalid_message/invalid_file/invalid_group, but maybe doing them *within locks* would be significantly better, and not exposing them to UI. We don't need to expose them to UI if every library function does a check. Alternatively we could have functions with locks to wrap them.</li>
 			<li>Integer getter functions in thread_safety.c should be re-written similar to getter_call_union's usage. Initial focus should be elimination of macros.</li>
 			<li>Rewrite anywhere that we pass n+i to pass n+struct instead. Array of struct works fine for everything except messages.</li>
@@ -103,18 +101,17 @@
 				<li>UI message will have to register its' location with a void pointer to the library message, and library message will have to have a callback trigger to tell UI to delete the UI message before deleting itself.</li>
 				<li>Printing messages by linked list should be possible because we already do it in groups.</li>
 				<li>To consider: use reference counter on group stream messages and delete when too old or all sent.</li>
+				<li>WARNING: UIs utilize i quite extensively to have their own message specifics (such as 'unread'). Facilitating this MUST be maintained.</li>
 			</ul>
 			<li>Structs maybe should be realloc'd on every growth? Might not be good for messages, but would make sanity checks easier like in audio_call.c. Alternative is to use max_peer, max_group, etc, which already exist.</li>
 			<li>Every library function should do basic sanity checks (ex: n > -1 && n < threadsafe_read_int(&mutex_global_variable,&max_peer), g > -1 && g < threadsafe_read_int(&mutex_global_variable,&max_group), etc), either with -1 or 0 error level, as appropriate. Diagnosing a -1 shutdown is far easier than a segfault on Android.</li>
 			<li>ENUM_PROTOCOL_FILE_INFO_REQUEST maybe should not be facilitated in public groups.</li>
 			<li>Pointer objects are not properly accessible through getter_array and will fail getter_array_sanity_check and getter_group_array_sanity_check, with the exception of message. We will need to implement null checks and strlen.</li>
-			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs.</li>
-			<li>Some file related protocols are saved even if logging is disabled. This should be resolved.</li>
 			<li>message_resend hasn't been tested in a while. Test with public groups, private groups(signed), p2p.</li>
 			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
 			<li>GROUP_OFFER_ACCEPT: ONLY respond IF we verify that we already sent this peer an UNUSED invitation (perhaps we should save this with extraneous), otherwise could be issues (ie, a malicious peer could accept multiple times and bring in a bunch of people)</li>
 		<!--	<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li> -->
-			<li>Consider the viability of (or move towards) full-duplex messages of all types, and treating files nearly the same as any other message.</li>
+			<li>Consider the viability of (or move towards) full-duplex messages of all types except those restricted to a specific fd_type (including splits and the ability to resume?), and treating files nearly the same as any other message.</li>
 			<ul>
 				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
 			</ul>
@@ -151,9 +148,10 @@
 				<ul>
 					<li>The number of minutes to stagger over could be UI configurable. (Default: 15? Relative to average runtime? Lower on mobile?)</li>
 				</ul>
+				<li>Need to monitor and disconnect any peers who connect and don't send packets. Maybe a connection of 10 seconds or more without transfer should be punished. More than 2-3 such connections in 24 hours could result in a period of punitive blocking?</li>
 				<li>Major remaining question: Can all our efforts be voided by malicious peers with modified Tor clients requesting `rendezvous` without establishing a TCP connection over it?</li>
 				<ul>
-					<li>Assuming YES, we might need to be able to monitor when RELAY_COMMAND_INTRO_ESTABLISHED relay cells are received (Is this even possible without modifying Tor? Maybe this should wait for Arti).</li>
+					<li>Assuming YES, we might need to be able to monitor when RELAY_COMMAND_RENDEZVOUS1 relay cells are sent (Or something related is received? Is this even possible without modifying Tor? Maybe this should wait for Arti).</li>
 				</ul>
 			</ul>
 			<li>Need a red team building malicious or buggy client/library, which will send undersized/oversized messages, spam attacks, etc.</li>
@@ -208,6 +206,7 @@
 		<ul>
 			<li>We could experimentally move towards putting all libevent work on a event loop, as a trial for de-threading</li>
 			<li>OSX Builds (also applies to Flutter) won't work without a fix like this https://github.com/openssl/openssl/issues/8941#issuecomment-880386095</li>
+			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs. However, since moving file operations to extras/file.c, likely seperate functions could be used.</li>
 			<li>Known bug (with effective work-around implemented already): After authenticating, our first command to tor_call (both binary Tor and system Tor) fails with 510 Unrecognized command "".</li>
 			<li>Orbot compatibility: At least on Android, Orbot starts up with a random CTRL_PORT. We could work with their devs to get them to resolve the issue.</li>
 			<li>Global variables could each have their own mutex rather than using mutex_global_variable. However, the extra processing required would probably negate any benefit since mutex_global_variable should only be very briefly held anyway.</li>
@@ -305,6 +304,7 @@
 		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
+			<li>Play .unheard audio messages in sequence</li>
 			<li>peer_onine_cb/peer_offline_cb/call_peer_joining/call_peer_leaving should trigger rebuilds of popovers. In GTK, by re-populating the appropriate list_store. In Flutter, with changeNotifierPopoverList.</li>
 			<li>Participating List popover should also be re-built when a peer is speaking (to flash badge), and in GTK when someone clicks "mic/mic_off" "volume_up/volume_off" icons to toggle peer specific setting in Participant List (currently it is static).</li>
 			<li>Pete Hegseth function: When a new GROUP_PEER joins, some sort of message needs to be displayed in channel showing who invited them. Perhaps we should generate a non-sendable message type that can be saved into the database and appear as a permanent local notification in the channel.</li>
@@ -372,7 +372,6 @@
 			<ul>
 				<li>Update stickers when saved/deleted.</li>
 				<li>Static gifs except on mouseover (at least make it a compile option).</li>
-				<li>Allow adding multiple stickers at once, from filepicker.</li>
 			</ul>
 			<li>Streaming audio: We are sending data even when it is silence. (Avoiding this in Flutter via getAmplitude, GStreamer ???)</li>
 			<li>System Tor / Binary Tor switching: Cannot change the ports properly because changes trigger multiple Tor restarts (ui_spin_change / ui_tor_control_password_change), which cause ports to appear utilized.</li>
@@ -387,7 +386,6 @@
 			<li>file_set_path should be used to set .file_path, instead of manually setting it.</li>
 			<li>GTK_FACTORY_BUG mitigation has a side effect: messages are not reloaded until application restart, which means that modifying peernicks of group members do not change nicks within loaded messages until restart. Mitigate by re-loading effected messages.</li>
 			<li>Bug: Messages that are larger than the chat window cannot be long-pressed properly (so cannot copy, etc). Issue is caused by the popover being spawned at the top of the message rather than the point of long-press.</li>
-			<li>While minimized to tray, message scroll doesn't really work. The scroll_func_idle gets called, but to no effect.</li>
 			<li>Idle functions shouldn't call idle functions? Valgrind-race/Helgrind throws some perhaps false positives for race conditions as a result. Notably, we do it for scroll_func_idle / scroll_func_idle_inverted.</li>
 			<li>Create .deb file + Debian repo</li>
 			<li>Create .rpm file + RedHat repo</li>
@@ -405,6 +403,8 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Renaming a group member does not rebuild/update visible messages</li>
+			<li>Should scroll slightly when message entry area grows (when we are already scrolled some)</li>
 			<li>Landscape style images, at least in group PM, end up displaying undersized in an oversized message bubble.</li>
 			<li>Rebuild message list after file transfer deletes (or specific message)</li>
 			<li>Clicking back while modifying peernick causes loss of changes (only in GTK4)</li>
@@ -433,7 +433,10 @@
 			<li>Need to have a manner of backing up because overwriting with APKs built by different sources is deleting stored data. Also, prevent that from accidentally happening without warning?</li>
 			<li>Streaming audio: not recording when route is not open or screen is closed</li>
 			<li>Values passed to changeNotifier(s) are inconsistent and arbitrary because in most cases we don't use them. We should universally standardize them and utilize them with $changeNotifier.section.$value</li>
-			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting</li>
+			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting. This is an Android issue, not just a file_picker issue.</li>
+			<ul>
+				<li>This alternative returns files as a byte stream instead of caching, but that won't solve our issue https://pub.dev/packages/fast_file_picker/</li>
+			</ul>
 			<li>Can we prevent other applications from knowing this application is installed?</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections. We may need to fork all our dependencies to disable any firebase reference or remote connections.</li>
 			<li>Consider having a popup when adding something to clipboard. The clipboard would have a "Clear clipboard" and "Exit" option, along with a warning about other applications being able to steal clipboard contents. In some softwares (ie password managers), after ~45 seconds, it will clear the clipboard.</li>
@@ -453,6 +456,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Clicking rename/PM/activity from Group Peers list should pop Group Peers list, but we can't use popUntil in generateMessageMenu unless we use pushNamed</li>
 			<li>Too long of a nick can overflow a activity bar.</li>
 			<li>Consider other default ringtone/beeps, such as https://freesound.org/people/knufds/sounds/633159/</li>
 			<li>"Resend" is available in different/less circumstances than in GTK</li>
@@ -475,6 +479,7 @@
 	<section id="website">
 		<h3>TODO List for Website/Github/Promotion:</h3>
 		<ul>
+			<li>Apply for https://nlnet.nl/propose/</li>
 			<li>Get listed on: https://privacyspreadsheet.com/messaging-apps</li>
 			<li>Add FUNDING.yml https://github.com/tonyp7/esp32-wifi-manager/blob/master/.github/FUNDING.yml</li>
 			<li>Figure out how we will archive old versions of .apk files in a manner compatible with F-Droid https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github?platform=linux</li>

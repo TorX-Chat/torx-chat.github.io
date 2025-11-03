@@ -107,11 +107,11 @@
 		<pre>
 Handshake with V3Key / V3Auth Diagram:
 ________________________________________________________________________________
-|	SING <---VV[2]+PeerOnion[56]+PeerV3KeyB64.pub[52]--- Peer		|
+|	SING <---Version[2]+PeerOnion[56]+PeerV3Key.pub[32]--- Peer		|
 |	||		(down)							|
 |	\/									|
 |	Gen_CTRL								|
-|	+ PeerV3Key ---VV[2]+CtrlOnion[56]+V3KeyB64.pub[52]---> Peer		|
+|	+ PeerV3Key ---VV[2]+CtrlOnion[56]+V3Key.pub[32]---> Peer		|
 |				(up)			   ||			|
 |							   \/			|
 |					(Brings up PeerOnion with V3Key)	|
