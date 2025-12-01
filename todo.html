@@ -51,7 +51,6 @@
 		</ul>	
 		<h4>Ideal project-wide goals before full-release:</h4>
 		<ul>
-			<li>Ncurses client</li>
 			<li>CLI/API client for integration with AI bots/etc (Julia)</li>
 			<li>Google PlayStore listing</li>
 			<li>FDroid listing (official repo, not ours)</li>
@@ -67,6 +66,8 @@
 			<li>File transfers: fallocate(linux)/lseek(linux) or pre-allocate files in some sort of null state. Would have to do this in OS specific manners https://devblogs.microsoft.com/oldnewthing/20160714-00/?p=93875</li>
 			<li>Could allow protocols to require an acknowledgement (ACK) of receipt by sending a fnv1a unsalted hash (uint32) back. Using a 64 byte checksum is unnecessary and wastes RAM space in the message struc, HOWEVER a truncated SHA3 may be better because it would be able to handle larger message sizes, because it doesn't rely on loading the entire message into stack... but we could easily re-write the fnv1a hasher function to use the heap. Either method does not require both sides to keep a shared index number of any type. Would need to store hashes for sent messages of this type in struct so that confirmation could rapidly be determined without having to re-hash every such message. Alternatively, we could just use time:nstime, time:nstime + hash, or time:nstime + length.</li>
 			<li>The value for ConstrainedSockSize could be causing slow file transfers</li>
+			<li>Shipping platform independent binaries compiled with https://github.com/jart/cosmopolitan</li>
+			<li>Utilizing https://github.com/pizlonator/fil-c/ or concepts therein for Rust-like memory safety assurance (NOTE: may have performance impact on onion_gen.c)</li>
 		<!--	<li>M****o-cli integration (not before full release / 2025)</li>
 			<ul>
 				<li>Might be difficult to implement for mobile if unsafe shutdowns of M****o cause b********n indexing corruption. However M****o-cli offers remote b********n options that would probably be safe from unsafe shutdowns.</li>
@@ -302,7 +303,7 @@
 			</ul>
 		</ul> -->
 	<section id="ui">
-		<h3>TODO List for Both UIs (Flutter and GTK4):</h3>
+		<h3>TODO List for Both Full UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
 			<li>Play .unheard audio messages in sequence</li>
@@ -475,6 +476,21 @@
 			<li>Prevent un-encrypted backups of android data? Most chat apps do this but I'm on the fence because our data is encrypted, and we do want to support history migration. GrapheneOS project has some info that suggests we can block only unencrypted backups.</li>
 			<li>Comment out any unused color and language strings. Ensure that we don't have any strings not in our languages file.</li>
 			<li>AnimatedBuilder should replace most or all remaining of our setState calls, for efficiency. There are few left.</li>
+		</ul>
+	<!--	<h4>Possibly no longer relevant:</h4>
+		<ul>
+		</ul> -->
+	<section id="ncurses">
+		<h3>TODO List for Ncurses client:</h3>
+		<h4>High Priority / Security Audit:</h4>
+		<ul>
+			<li>All basic functionality, excluding any /extras/</li>
+		</ul>
+		<h4>Medium Priority:</h4>
+		<ul>
+		</ul>
+		<h4>Low Priority:</h4>
+		<ul>
 		</ul>
 	<!--	<h4>Possibly no longer relevant:</h4>
 		<ul>
