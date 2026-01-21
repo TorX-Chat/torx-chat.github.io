@@ -208,6 +208,7 @@
 		<h4>Low Priority:</h4>
 		<ul>
 			<li>We could experimentally move towards putting all libevent work on a event loop, as a trial for de-threading</li>
+			<li>We don't define static variables within functions, even if that is the appropriate scope. We should consider doing so.</li>
 			<li>OSX Builds (also applies to Flutter) won't work without a fix like this https://github.com/openssl/openssl/issues/8941#issuecomment-880386095</li>
 			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs. However, since moving file operations to extras/file.c, likely seperate functions could be used.</li>
 			<li>Known bug (with effective work-around implemented already): After authenticating, our first command to tor_call (both binary Tor and system Tor) fails with 510 Unrecognized command "".</li>
@@ -322,6 +323,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Censored region toggle in settings, only exposed when using default torrc(s)</li>
 			<li>Network health monitoring (Unsure whether to implement via new callback or utilize tor_log_cb, but then it could slow UI rebuilds):</li>
 			<ul>
 				<li>uint8_t bootstrap-phase = 0-100; # Can be directly displayed by UI (Red below 30%, orange 30% to 100%)</li>
@@ -375,6 +377,7 @@
 			<ul>
 				<li>Update stickers when saved/deleted.</li>
 				<li>Static gifs except on mouseover (at least make it a compile option).</li>
+				<li>gif_animated_new_from_data with gtk_image_new_from_paintable_with_size, can eliminate ui_sticker_box, after 4.21 is widely utilized and we rip out gif_animation.c</li>
 			</ul>
 			<li>Streaming audio: We are sending data even when it is silence. (Avoiding this in Flutter via getAmplitude, GStreamer ???)</li>
 			<li>System Tor / Binary Tor switching: Cannot change the ports properly because changes trigger multiple Tor restarts (ui_spin_change / ui_tor_control_password_change), which cause ports to appear utilized.</li>
@@ -486,12 +489,17 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>All basic functionality, excluding any /extras/</li>
+			<li>UTF8 input and display is broken. See line comments on "Incompatible with utf8/wide characters".</li>
+			<li>Making window too small results in some size_t overflow. Need to be careful when using subtraction.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Pasting multi-line messages results in a send for each line. This may be a hard-limitation unless we implement a send button, or a timer/delay to detect when messags are attempted to be sent within ~50ms of each other. Could grep irssi's code to see how they implement theirs.</li>
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>Repeated calls to print_wrapped are responsible for excessive CPU usage. Might be ideal to cache message heights.</li>
+			<li>We destroy windows and all widgets on every draw_* when we could just use stdscr and re-use it or just re-draw affected widgets.</li>
 		</ul>
 	<!--	<h4>Possibly no longer relevant:</h4>
 		<ul>
