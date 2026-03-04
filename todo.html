@@ -38,6 +38,7 @@
 		<a href="#gtk4">GTK4</a>
 		<a href="#flutter">Flutter</a>
 		<a href="#ncurses">Ncurses</a>
+		<a href="#cli">Ncurses</a>
 		<a href="#website">Website</a>
 	</nav>
 	<section id="schedule">
@@ -488,14 +489,15 @@
 		<h3>TODO List for Ncurses client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>widget_text is incredibly inefficient, especially in draw_logs. Becomes apparent when scrolling.</li>
+			<li>If *current_focus is on message_input widget when a message_send/PGUP/PGDN occurs, *current_focus should be shifted to message_input after.</li>
+			<li>widget_text, torx_utf8len, print_wrapped are incredibly inefficient, especially in draw_logs. mvwprintw can actually wrap. Becomes apparent when scrolling logs especially. Use a profiler.</li>
 			<li>Making window too small results in some size_t overflow. Need to be careful when using subtraction. Do more math abstraction.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
 			<li>Messages don't show when sent/unsent. Could replace times with dashes ("--:--") when unsent.</li>
+			<li>Facilitate ignore/unignore in groups (currently only possible to establish PM)</li>
 			<li>draw_chat has no indicator of online status or last_seen time.</li>
-			<li>Modifying, deleting, etc, of individual messages.</li>
 			<li>Trigger setting save not just upon KEY_ENTER but also leaving focus (such as KEY_UP, KEY_DOWN, KEY_TAB).</li>
 			<li>Check if there are changes before writing settings to disk.</li>
 			<li>Pasting multi-line messages results in a send for each line. This may be a hard-limitation unless we implement a send button, or a timer/delay to detect when messags are attempted to be sent within ~50ms of each other. Could grep irssi's code to see how they implement theirs.</li>
@@ -510,8 +512,22 @@
 				<li>File picker (or verifier, for typed input)</li>
 				<li>Directory picker (or verifier, for typed input)</li>
 				<li>Setting for download_dir</li>
-				<li>Acceptance/Rejection/Ignore (at minimum) either through notify() or other method</li>
+				<li>Acceptance/Rejection of files</li>
 			</ul>
+		</ul>
+	<!--	<h4>Possibly no longer relevant:</h4>
+		<ul>
+		</ul> -->
+	<section id="cli">
+		<h3>TODO List for Bot/CLI client:</h3>
+		<h4>High Priority / Security Audit:</h4>
+		<ul>
+		</ul>
+		<h4>Medium Priority:</h4>
+		<ul>
+		</ul>
+		<h4>Low Priority:</h4>
+		<ul>
 		</ul>
 	<!--	<h4>Possibly no longer relevant:</h4>
 		<ul>
