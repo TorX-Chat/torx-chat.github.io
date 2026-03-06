@@ -208,7 +208,25 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
-			<li>We could experimentally move towards putting all libevent work on a event loop, as a trial for de-threading</li>
+			<li>We could experimentally move towards putting all libevent work on a single event base, as a trial for de-threading</li>
+			<ul>
+				<li>De-threading:</li>
+				<ul>
+					<li>Start with dethreading network IO (load_onion/send_init --> torx_events)</li>
+					<li>Note: File transfers are handled within this and will cause hangs.</li>
+				</ul>
+				<li>Remain threaded, but find async ways to respond w/o locks:</li>
+				<ul>
+					<li>sql_* functions</li>
+					<li>onion_gen.c</li>
+					<li>file transfer reads (and writes?)</li>
+					<li>b3sum_bin in file.c</li>
+				</ul>
+				<li>Theory:</li>
+				<ul>
+					<li>Perhaps each file transfer should have its own threa, potentially even its own network loop and socket (port).</li>
+				</ul>
+			</ul>
 			<li>We don't define static variables within functions, even if that is the appropriate scope. We should consider doing so.</li>
 			<li>OSX Builds (also applies to Flutter) won't work without a fix like this https://github.com/openssl/openssl/issues/8941#issuecomment-880386095</li>
 			<li>offer/request_list is not accessible through getter/setter functions. If we don't rapidly remedy this, we will inconvenience future UI devs. However, since moving file operations to extras/file.c, likely seperate functions could be used.</li>
@@ -495,7 +513,6 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>Messages don't show when sent/unsent. Could replace times with dashes ("--:--") when unsent.</li>
 			<li>Facilitate ignore/unignore in groups (currently only possible to establish PM)</li>
 			<li>draw_chat has no indicator of online status or last_seen time.</li>
 			<li>Trigger setting save not just upon KEY_ENTER but also leaving focus (such as KEY_UP, KEY_DOWN, KEY_TAB).</li>
