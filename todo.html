@@ -331,6 +331,7 @@
 		<h3>TODO List for Both Full UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
+			<li>"Unrecognized Protocol" will NEVER display because p_iter == -1 (GTK/Flutter/Ncurses(not implemented yet)). Short of registering an unknown protocol (bad idea), we should just rip it out. Let it be handled by logs only (otherwise it could be used to spam us anyway).</li>
 			<li>Play .unheard audio messages in sequence</li>
 			<li>peer_onine_cb/peer_offline_cb/call_peer_joining/call_peer_leaving should trigger rebuilds of popovers. In GTK, by re-populating the appropriate list_store. In Flutter, with changeNotifierPopoverList.</li>
 			<li>Participating List popover should also be re-built when a peer is speaking (to flash badge), and in GTK when someone clicks "mic/mic_off" "volume_up/volume_off" icons to toggle peer specific setting in Participant List (currently it is static).</li>
@@ -511,9 +512,14 @@
 		<h3>TODO List for Ncurses client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>If *current_focus is on message_input widget when a message_send/PGUP/PGDN occurs, *current_focus should be shifted to message_input after.</li>
-			<li>widget_text, torx_utf8len, print_wrapped are incredibly inefficient, especially in draw_logs. mvwprintw can actually wrap. Becomes apparent when scrolling logs especially. Use a profiler.</li>
-			<li>Making window too small results in some size_t overflow. Need to be careful when using subtraction. Do more math abstraction.</li>
+			<li>Long log files badly need caching</li>
+			<li>Cache message heights at given widths:</li>
+			<ul>
+				<li>size_t t_message[i].cached_width (recalculate if current width is inconsistent)</li>
+				<li>size_t *t_message[i].line_starts (from print_internal's line_starts)</li>
+				<li>Remember to recalculate upon edit</li>
+			</ul>
+			<li>(Difficult, need to recreate in GDB, but cannot) In main(), if(resized), if(*current_focus > -1 && widget[*current_focus].text && widget[*current_focus].type != WIDGET_OUTPUT_MULTI_LINE), we have to set *current_focus = -1; because otherwise it seems we hang on wrefresh(win) in widget_draw_cursor. However, doing so would case new issues (focus jumping around). Figure out why in this circumstance we hang on wrefresh(win).</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
@@ -525,8 +531,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
-			<li>WIDGET_OUTPUT_MULTI_LINE unnecessarily utilizes a visible cursor and prints a blank line at the end if the message ended at the edge or concluded with a newline</li>
-			<li>Repeated calls to print_wrapped are responsible for excessive CPU usage. Might be ideal to cache message heights at given widths.</li>
+			<li>WIDGET_OUTPUT_MULTI_LINE unnecessarily utilizes a visible cursor</li>
 			<li>We destroy windows and all widgets on every draw_* when we could just use stdscr and re-use it or just re-draw affected widgets.</li>
 			<li>Sending / acceptance of files</li>
 			<ul>
