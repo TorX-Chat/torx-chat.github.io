@@ -90,6 +90,7 @@
 		</ul>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Killing orphan Tor processes is unreliable, at least in ncurses.</li>
 			<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li>
 			<li>Sending many files leads to race conditions on n,i that result in `Message's p_iter is <0 which indicates it is deleted or buggy.(0/1)` and `Send_prep message already sent:`</li>
 			<li>Fatal errors (-1) should be examined and where possible (especially in void functions or functions that can return an error) there should be a graceful return</li>
@@ -347,6 +348,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>window_group_invite / window_group_peerlist have updated online/offline/deleted in Ncurses, but not in Flutter/GTK. Flutter fix will be easy (changenotifier) but GTK4 may be difficult (popover).</li>
 			<li>Censored region toggle in settings, only exposed when using default torrc(s)</li>
 			<li>Network health monitoring (Unsure whether to implement via new callback or utilize tor_log_cb, but then it could slow UI rebuilds):</li>
 			<ul>
@@ -460,19 +462,17 @@
 		<h3>TODO List for Flutter client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Flashes white during push/pop, as of late Nov 2025, after a Flutter update. Likely related to background color or some new "feature"?</li>
 			<li>Can we call _setter functions with NULL arguments when the UI layer is being destroyed, to prevent callbacks from being called on invalid function pointers?</li>
 			<li>Need to have a manner of backing up because overwriting with APKs built by different sources is deleting stored data. Also, prevent that from accidentally happening without warning?</li>
 			<li>Streaming audio: not recording when route is not open or screen is closed</li>
 			<li>Values passed to changeNotifier(s) are inconsistent and arbitrary because in most cases we don't use them. We should universally standardize them and utilize them with $changeNotifier.section.$value</li>
-			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting. This is an Android issue, not just a file_picker issue.</li>
+			<li>File picker caches in /data/user/0/com.torx.chat/cache/file_picker/, causing failure to resume outbound transfers after restarting. This is an Android issue, not just a file_picker issue. If we never clear this, it fills up the application cache and presents a security issue for both (created) stickers and shared files.</li>
 			<ul>
 				<li>This alternative returns files as a byte stream instead of caching, but that won't solve our issue https://pub.dev/packages/fast_file_picker/</li>
 			</ul>
 			<li>Can we prevent other applications from knowing this application is installed?</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections. We may need to fork all our dependencies to disable any firebase reference or remote connections.</li>
 			<li>Consider having a popup when adding something to clipboard. The clipboard would have a "Clear clipboard" and "Exit" option, along with a warning about other applications being able to steal clipboard contents. In some softwares (ie password managers), after ~45 seconds, it will clear the clipboard.</li>
-			<li>We don't use cache directory(?) but on one device we have a lot of cache there. Could it be from crashes? restoreState?</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
@@ -484,7 +484,6 @@
 			<li>Crash: Also FlutterLocalNotifications, Unable to start service com.dexterous.flutterlocalnotifications.ForegroundService@52b4439 with null: java.lang.NullPointerException: Attempt to invoke virtual method 'java.io.Serializable android.content.Intent.getSerializableExtra(java.lang.String, java.lang.Class)' on a null object reference</li>
 			<li>Isolates: showsUserInterface should be false, but we can't get it to work. Seems like few if any have (seems like they only use it with cancelNotification): https://github.com/search?q=%22showsUserInterface%3A+false%22&type=code with the only exception being here: https://github.com/jenspfahl/EverydayTasks/blob/a85475deae37649ba8ef18978e19270e3ba7ebb6/lib/ui/pages/ScheduledTaskList.dart#L977 Note: If we re-write our notifications (and perhaps callbacks) in native code for better lifecycle management, this issue would be irrelevant.</li>
 			<li>Delete temporaryDir/qr.png on program startup and shutdown (or when going to AppLifecycleState.paused?). Zero and delete might be best.</li>
-			<li>Message box height: 400 is too tall. Figure out a way to avoid hard coding it.</li>
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
@@ -523,8 +522,14 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Issue: Links break at line wrap, and blank spaces copy as spaces</li>
+			<ul>
+				<li>(Links) Remove bottom and side borders (warning: removing bottom will affect scrolling)</li>
+				<li>(Links) Use soft-wrapping instead of hard-wrapping</li>
+				<li>(Spaces) Abolish light theme (necessary)</li>
+				<li>(Spaces) Use wclrtoeol to clear to the end of lines after printing necessary text</li>
+			</ul>
 			<li>Facilitate ignore/unignore in groups (currently only possible to establish PM)</li>
-			<li>draw_chat has no indicator of online status or last_seen time.</li>
 			<li>Trigger setting save not just upon KEY_ENTER but also leaving focus (such as KEY_UP, KEY_DOWN, KEY_TAB).</li>
 			<li>Check if there are changes before writing settings to disk.</li>
 			<li>Pasting multi-line messages results in a send for each line. This may be a hard-limitation unless we implement a send button, or a timer/delay to detect when messags are attempted to be sent within ~50ms of each other. Could grep irssi's code to see how they implement theirs.</li>
