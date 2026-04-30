@@ -229,7 +229,7 @@
 				</ul>
 				<li>Theory:</li>
 				<ul>
-					<li>Perhaps each file transfer should have its own threa, potentially even its own network loop and socket (port).</li>
+					<li>Perhaps each file transfer should have its own thread, potentially even its own network loop and socket (port).</li>
 				</ul>
 			</ul>
 			<li>We don't define static variables within functions, even if that is the appropriate scope. We should consider doing so.</li>
@@ -462,6 +462,7 @@
 		<h3>TODO List for Flutter client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>OOM repeatedly simulated in Termux resulted in simple kill of TorX, without issues upon re-opening. Seems our issue may be from OOM occuring in TorX itself? We haven't tried simulating that.</li>
 			<li>Can we call _setter functions with NULL arguments when the UI layer is being destroyed, to prevent callbacks from being called on invalid function pointers?</li>
 			<li>Need to have a manner of backing up because overwriting with APKs built by different sources is deleting stored data. Also, prevent that from accidentally happening without warning?</li>
 			<li>Streaming audio: not recording when route is not open or screen is closed</li>
@@ -476,6 +477,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>setBottomIndex is not being reliably called because login_cb(-1) is being called by the library before login_cb(0), even when here is no password?</li>
 			<li>Investigate whether we are utlizing or could benefit from optimization: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization#keep-code</li>
 			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
 			<li>Need to do more testing with horizontal views. Known issue: Deleting stuff on Home page is impossible in horizontal mode. Other stuff untested.</li>
@@ -487,6 +489,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>setBottomIndex() and return const RouteBottom() are called exactly after initial_keyed(), which usually negates the value of setBottomIndex(). Issue is largely caused by the fact that we have no "all keyed settings are loaded" callback.</li>
 			<li>Clicking rename/PM/activity from Group Peers list should pop Group Peers list, but we can't use popUntil in generateMessageMenu unless we use pushNamed</li>
 			<li>Too long of a nick can overflow a activity bar.</li>
 			<li>Consider other default ringtone/beeps, such as https://freesound.org/people/knufds/sounds/633159/</li>
