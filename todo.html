@@ -477,6 +477,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>After a recent Flutter update, we are once again building arm64-v8a, armeabi-v7a, and x86_64. We do not necessarily need any except arm64.</li>
 			<li>setBottomIndex is not being reliably called because login_cb(-1) is being called by the library before login_cb(0), even when here is no password?</li>
 			<li>Investigate whether we are utlizing or could benefit from optimization: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization#keep-code</li>
 			<li>CMakeLists.txt: Ship a release version of Tor instead of building from main (this requires following tor-announce mailing list and manually updating CMakeLists.txt for every stable release)</li>
