@@ -167,6 +167,8 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>(Version 3) Consider libz + redundant ed25519 encryption for ALL protocols, including handshakes: redundant encryption is YES after https://gitlab.torproject.org/tpo/core/tor/-/work_items/41297 but compression before encryption is not beneficial in most cases for text / mechanics (since they are below one packet/cell in size) and unnecessary for most other files (which are likely already compressed). Compression adds attack surface, but redundant encryption provides real value. https://media.ccc.de/v/gpn22-469-self-authenticating-tls-certificates-for-tor-onion-services</li>
+			<li>2026/06/25: Split path didn't get renamed or deleted, without an error being ghtorwn, on Linux, in /tmp. `Checkpoint DELETING SPLIT PATH` occured and no further debug output</li>
 			<li>AUDIO_STREAM could be MEDIA_STREAM and a suffix could be added for type (_VIDEO, _AUDIO, idk), but if we want to truly support arbitrary types, we need to have a series of EXCLUSIVE_TYPE MEDIA_CALL protocol_registration toggles? Ex: EXCLUSIVE_MEDIA(_CALL_JOIN(_PRIVATE)(_TYPE)/)(_DATA) If necessary, cache retrieval functions could be passed a _DATA_ protocol to retrieve that type (so that audio can be retrieved seperately from video, etc).</li>
 			<li>Consider renaming getter_uint32 --> getter_peer_uint32, etc, setter --> setter_peer, threadsafe_read_ --> getter_global_, threadsafe_write --> setter_global. Also consider using offsets (or a variation of it) struct on global variables so that getter_global / setter_global can take strings as arguments, instead of mutex and pointer, and do anticipated_size sanity checks.</li>
 			<li>2025/05/27 Possible Tor bug (verify with clean client, control port): del_onion fails on odd attempts (1,3,5,...) and succeeds on even attempts (2,4,6,...), even though each is preceded by an ADD_ONION.</li>
@@ -213,6 +215,7 @@
 		</ul>
 		<h4>Low Priority:</h4>
 		<ul>
+			<li>File size padding https://lbarman.ch/blog/padme/ has been implemented by Apple's iMessage and Meta's Messages. This could be implemented with a toggle and a random amount of random data (its own protocol) could follow immediately after a file transfer. Does not prevent deanonymization but can mitigate monitoring of file transfers.</li>
 			<li>We could experimentally move towards putting all libevent work on a single event base, as a trial for de-threading</li>
 			<ul>
 				<li>De-threading:</li>
