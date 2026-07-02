@@ -66,7 +66,6 @@
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
 			<li>Use timezone info to determine default torrc? (Briar does this. This could really be a UI thing, though we do have the censored_region variable in lib). Timezone + language would be more effective.</li>
 			<li>File transfers: fallocate(linux)/lseek(linux) or pre-allocate files in some sort of null state. Would have to do this in OS specific manners https://devblogs.microsoft.com/oldnewthing/20160714-00/?p=93875</li>
-			<li>Could allow protocols to require an acknowledgement (ACK) of receipt by sending a fnv1a unsalted hash (uint32) back. Using a 64 byte checksum is unnecessary and wastes RAM space in the message struc, HOWEVER a truncated SHA3 may be better because it would be able to handle larger message sizes, because it doesn't rely on loading the entire message into stack... but we could easily re-write the fnv1a hasher function to use the heap. Either method does not require both sides to keep a shared index number of any type. Would need to store hashes for sent messages of this type in struct so that confirmation could rapidly be determined without having to re-hash every such message. Alternatively, we could just use time:nstime, time:nstime + hash, or time:nstime + length.</li>
 			<li>The value for ConstrainedSockSize could be causing slow file transfers</li>
 			<li>Shipping platform independent binaries compiled with https://github.com/jart/cosmopolitan</li>
 			<li>Utilizing https://github.com/pizlonator/fil-c/ or concepts therein for Rust-like memory safety assurance (NOTE: may have performance impact on onion_gen.c)</li>
@@ -86,7 +85,13 @@
 		<h3>TODO List for TorX Library:</h3>
 		<h4>Scheduled for next major version (3):</h4>
 		<ul>
-			<li>Consider ceasing to null terminate string based protocols</li>
+			<li>Consider ceasing to null terminate string based protocols</li>		<!--	<li>Version 3: Null terminated protocols pass the null terminator over the network. </li> NO. it's so they can have their signatures verified and be re-sent unchanged to other peers without a having to do a memcpy / re-arrangement. passing the null byte over the network was determined to be trivial in comparison to making special carveouts in how we download / store / verify / resend messages. -->
+			<li>Consider libz + redundant ed25519 encryption for ALL protocols, including handshakes: redundant encryption is YES after https://gitlab.torproject.org/tpo/core/tor/-/work_items/41297 but compression before encryption is not beneficial in most cases for text / mechanics (since they are below one packet/cell in size) and unnecessary for most other files (which are likely already compressed). Compression adds attack surface, but redundant encryption provides real value. https://media.ccc.de/v/gpn22-469-self-authenticating-tls-certificates-for-tor-onion-services</li>
+			<li>Consider allowing protocols to require an acknowledgement (ACK) of receipt by sending a fnv1a unsalted hash (uint32) back. Using a 64 byte checksum is unnecessary and wastes RAM space in the message struc, HOWEVER a truncated SHA3 may be better because it would be able to handle larger message sizes, because it doesn't rely on loading the entire message into stack... but we could easily re-write the fnv1a hasher function to use the heap. Either method does not require both sides to keep a shared index number of any type. Would need to store hashes for sent messages of this type in struct so that confirmation could rapidly be determined without having to re-hash every such message. Alternatively, we could just use time:nstime, time:nstime + hash, or time:nstime + length, but those aren't always sent. fnv1a + length perhaps?</li>
+			<li>Consider the viability of (or move towards) full-duplex messages of all types except those restricted to a specific fd_type (including splits and the ability to resume?), and treating files nearly the same as any other message.</li>
+			<ul>
+				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
+			</ul>
 		</ul>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
@@ -94,7 +99,7 @@
 			<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li>
 			<li>Sending many files leads to race conditions on n,i that result in `Message's p_iter is <0 which indicates it is deleted or buggy.(0/1)` and `Send_prep message already sent:`</li>
 			<li>Fatal errors (-1) should be examined and where possible (especially in void functions or functions that can return an error) there should be a graceful return</li>
-		<!--	<li>Version 3: Null terminated protocols pass the null terminator over the network. </li> NO. it's so they can have their signatures verified and be re-sent unchanged to other peers without a having to do a memcpy / re-arrangement. passing the null byte over the network was determined to be trivial in comparison to making special carveouts in how we download / store / verify / resend messages. -->
+
 			<li>Headers: Certain macros, struct models (what about global structs like peer itself?), functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h. This will reduce the frequency of API/ABI changes. Also, torx_insecure_malloc should be renamed torx_malloc_insecure, and things like evutil_closesocket and sodium_memzero should be abstracted away, then UI libraries won't need to necessarily pull in sodium/event when building shared libraries (CMakeLists.txt).</li>
 		<!--	<li>event_strc->buffer, event_strc->buffer_len, event_strc->untrusted_message_len, should PROBABLY be per fd_type? NO. sockfd is only one, authenticated is only one. We have one event_strc per half-duplex connection</li> -->
 		<!--	<li>We do htobe stupidly, everywhere in C. Should do it as *(uint32_t *)&message[4] = htobe32(1234); (must cast when >1 byte). NOTE: CHATGPT SAYS THIS IS UNWORKABLE DUE TO ALIGNMENT.</li> -->
@@ -120,10 +125,6 @@
 			<li>Restarting Tor calls sql_populate_peer again. Much of it may be unnecessary if(messages_loaded). load_onion(n) and peer_init or whatever does tor calls may be necessary. More importantly, we should probably find a way to take down onions before shutting down Tor. If we did that, we could eliminate issues.</li>
 			<li>GROUP_OFFER_ACCEPT: ONLY respond IF we verify that we already sent this peer an UNUSED invitation (perhaps we should save this with extraneous), otherwise could be issues (ie, a malicious peer could accept multiple times and bring in a bunch of people)</li>
 		<!--	<li>Tor not dying keeps onions online after crash. Consider the viability of a Tor Killer process that will kill Tor if TorX's PID dies. It could just be a wait() kill() process, being forked from TorX with possession of both Tor and TorX PIDs. This would be useful to ensure that Tor and its hidden services aren't left hanging if TorX crashes or is improperly closed. NOTE: probably better to use just not use detached? Next startup would kill tor via PID.</li> -->
-			<li>Consider the viability of (or move towards) full-duplex messages of all types except those restricted to a specific fd_type (including splits and the ability to resume?), and treating files nearly the same as any other message.</li>
-			<ul>
-				<li>Every message would need to have a checksum (for matching) and a start point, similar to how we do files now.</li>
-			</ul>
 			<li>File transfer checksums fail after combination of sender crashes, stickers, messages, multi-file transfers, etc. Need audit.</li>
 			<li>Callback for invalid or incomplete message (which could be illict attempts to ping or do traffic analysis).</li>
 			<ul>
@@ -167,7 +168,6 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
-			<li>(Version 3) Consider libz + redundant ed25519 encryption for ALL protocols, including handshakes: redundant encryption is YES after https://gitlab.torproject.org/tpo/core/tor/-/work_items/41297 but compression before encryption is not beneficial in most cases for text / mechanics (since they are below one packet/cell in size) and unnecessary for most other files (which are likely already compressed). Compression adds attack surface, but redundant encryption provides real value. https://media.ccc.de/v/gpn22-469-self-authenticating-tls-certificates-for-tor-onion-services</li>
 			<li>2026/06/25: Split path didn't get renamed or deleted, without an error being ghtorwn, on Linux, in /tmp. `Checkpoint DELETING SPLIT PATH` occured and no further debug output</li>
 			<li>AUDIO_STREAM could be MEDIA_STREAM and a suffix could be added for type (_VIDEO, _AUDIO, idk), but if we want to truly support arbitrary types, we need to have a series of EXCLUSIVE_TYPE MEDIA_CALL protocol_registration toggles? Ex: EXCLUSIVE_MEDIA(_CALL_JOIN(_PRIVATE)(_TYPE)/)(_DATA) If necessary, cache retrieval functions could be passed a _DATA_ protocol to retrieve that type (so that audio can be retrieved seperately from video, etc).</li>
 			<li>Consider renaming getter_uint32 --> getter_peer_uint32, etc, setter --> setter_peer, threadsafe_read_ --> getter_global_, threadsafe_write --> setter_global. Also consider using offsets (or a variation of it) struct on global variables so that getter_global / setter_global can take strings as arguments, instead of mutex and pointer, and do anticipated_size sanity checks.</li>
@@ -530,6 +530,7 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>Multi-line nicks should be prohibited</li>
 			<li>Issue: Links break at line wrap, and blank spaces copy as spaces</li>
 			<ul>
 				<li>(Links) Remove bottom and side borders (warning: removing bottom will affect scrolling)</li>
