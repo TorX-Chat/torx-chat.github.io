@@ -75,6 +75,7 @@
 			<ul>
 				<li>Might be difficult to implement for mobile if unsafe shutdowns of M****o cause b********n indexing corruption. However M****o-cli offers remote b********n options that would probably be safe from unsafe shutdowns.</li>
 				<li>Can reptyr steal control of a CLI program running in fork? (presuming no, but can other methods?) If so then we need to integrate M****o by function calls rather than CLI. Should talk to devs or look at existing implementations.</li>
+				<li>Careful if binding addresses to peers. Deletion or kill codes could be costly</li>
 			</ul> -->
 		</ul>
 		<h4>For public discussion (UI Clients):</h4>
@@ -98,6 +99,7 @@
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
 			<li>Duress key: default `1984` destroys keys and deletes files, then starts up normally with blank everything. Allow changing, view. Hash stored in plaintext, plaintext stored in encrypted (so you can "view to confirm" without "testing" it).</li>
+			<li>b3sum_bin on files and file chunks should utilize threads and internal (not UI) callbacks (for what to do next), to prevent hang when sending/receiving large files.</li>
 			<li>AUDIO_STREAM could be MEDIA_STREAM and a suffix could be added for type (_VIDEO, _AUDIO, idk), but if we want to truly support arbitrary types, we need to have a series of EXCLUSIVE_TYPE MEDIA_CALL protocol_registration toggles? Ex: EXCLUSIVE_MEDIA(_CALL_JOIN(_PRIVATE)(_TYPE)/)(_DATA) If necessary, cache retrieval functions could be passed a _DATA_ protocol to retrieve that type (so that audio can be retrieved seperately from video, etc).</li>
 			<li>(I think we did this?) In read_conn(), we determine too late that a message was signed by us / "resent" to us. We should determine this earlier and exempt the message from most protocol-specific types of handling, including perhaps any stream handling. It should pretty much just be stored, if not a duplicate (as it already is after determination). This could be a simple goto after verifying signature, but we have to verify that nn / discard_after_processing / other gets set. We can use `if(group_peer_n > -1 && group_peer_n == event_strc->group_n)` because this is only an issue with group_check_sig / groups, not PMs / p2p where resent signed messages just fail sig checks.</li>
 			<li>Killing orphan Tor processes is unreliable, at least in ncurses.</li>
@@ -174,6 +176,7 @@
 		<h4>Medium Priority:</h4>
 		<ul>
 			<li>We should build automated tests for every library function</li>
+			<li>__func__ and __LINE__ can be passed as %s to error_printf(0,""); functions. At error level zero, they are likely of some novelty or use.</li>
 			<li>2026/06/25: Split path didn't get renamed or deleted, without an error being ghtorwn, on Linux, in /tmp. `Checkpoint DELETING SPLIT PATH` occured and no further debug output</li>
 			<li>Consider renaming getter_uint32 --> getter_peer_uint32, etc, setter --> setter_peer, threadsafe_read_ --> getter_global_, threadsafe_write --> setter_global. Also consider using offsets (or a variation of it) struct on global variables so that getter_global / setter_global can take strings as arguments, instead of mutex and pointer, and do anticipated_size sanity checks.</li>
 			<li>2025/05/27 Possible Tor bug (verify with clean client, control port): del_onion fails on odd attempts (1,3,5,...) and succeeds on even attempts (2,4,6,...), even though each is preceded by an ADD_ONION.</li>
@@ -232,7 +235,6 @@
 					<li>sql_* functions</li>
 					<li>onion_gen.c</li>
 					<li>file transfer reads (and writes?)</li>
-					<li>b3sum_bin in file.c</li>
 				</ul>
 				<li>Theory:</li>
 				<ul>
@@ -339,6 +341,7 @@
 		<h3>TODO List for Both Full UIs (Flutter and GTK4):</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul> <!-- Note: GStreamer can be compiled for Android, if absolutely necessary. -->
+			<li>Inbound calls (and potentially active) calls should show something (like how we have a unread count), such as turning the online status dot into a phone in the peer list</li>
 			<li>"Unrecognized Protocol" will NEVER display because p_iter == -1 (GTK/Flutter/Ncurses(not implemented yet)). Short of registering an unknown protocol (bad idea), we should just rip it out. Let it be handled by logs only (otherwise it could be used to spam us anyway).</li>
 			<li>Play .unheard audio messages in sequence</li>
 			<li>peer_onine_cb/peer_offline_cb/call_peer_joining/call_peer_leaving should trigger rebuilds of popovers. In GTK, by re-populating the appropriate list_store. In Flutter, with changeNotifierPopoverList.</li>
@@ -573,6 +576,7 @@
 	<section id="website">
 		<h3>TODO List for Website/Github/Promotion:</h3>
 		<ul>
+			<li>Get included in TAILS</li>
 			<li>Apply for https://nlnet.nl/propose/</li>
 			<li>Get listed on: https://privacyspreadsheet.com/messaging-apps</li>
 			<li>Add FUNDING.yml https://github.com/tonyp7/esp32-wifi-manager/blob/master/.github/FUNDING.yml</li>
