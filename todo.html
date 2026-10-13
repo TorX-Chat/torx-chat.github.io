@@ -63,6 +63,7 @@
 		<ul>
 			<li>Additional/Dummy accounts: (1) Must use same .db file(s) otherwise modification times would give away the scheme. (2) Creating a new account must not be default behavior when entering a wrong password. (3) Account creation methods: Button on login page. Facilitating in Settings is unnecessary because the only value would be to users who auto-login, and those users would never be able to utilize the feature. (4) (Optional: Recommend "no" to UI implementation, but the library should facilitate unlocked creation of new accounts) UI could prompt the user on first-run with the option to create one or more (ie provide one or more dummy passwords). (5) An option in settings (or upon login) could allow entering additional password to unlock additional accounts simultaneously. These accounts would have to be independently unlockable and not subordinate.</li>
 			<li>We could have an option to share IDs by words, using 1024 common/short words (easy to spell with no regional variation), 24 words per ID, representing 48 bytes (each word represents two bytes). TorXID entry could accept it if there are more than several six spaces in an entry. The words would have to be hardcoded and unchangeable. Misspelling would present an error. Shortening could still be applied. if odd number, would just have to put a trailing Q to make it even (before converting to words). Whether to have a checksum word is open to discussion.</li>
+			<li>Video broadcasts: Having one video stream for a whole group (would have to be signed) that can be re-shared (each person sharing to another person or two, in real time, similar to file transfers) by everyone receiving it. This would reduce bandwidth requirements for those streaming to dozens/hundreds of peers, but determining who has what bandwith to share would be difficult and make this very complicated. It would also add latency but since it is a broadcast rather than video call, latency is less of a concern.</li>
 			<li>Peer struct is currently an array of struct; there may be benefits to moving it to a linked list, facilitating more of an OOP approach, though an incredible amount work would be involved.</li>
 			<li>Git submodules vs ExternalProject_Add vs other? ExternalProject_Add, including remote downloads, is going to be incompatible with certain packaging methods (such as .deb).</li>
 			<li>Seperate "keys" and "settings" databases? Currently a bad setting can crash the application (such as a bunk sticker). UI developers should work to prevent this, rather than working around the problem in a brutal fashion such as by encouraging users to delete their settings database. (which would be very hard on mobile). If implementing, remember to implement in change_password.</li>
@@ -98,12 +99,17 @@
 		</ul>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
-			<li>Duress key: default `1984` destroys keys and deletes files, then starts up normally with blank everything. Allow changing, view. Hash stored in plaintext, plaintext stored in encrypted (so you can "view to confirm" without "testing" it).</li>
-			<li>b3sum_bin on files and file chunks should utilize threads and internal (not UI) callbacks (for what to do next), to prevent hang when sending/receiving large files.</li>
-			<li>AUDIO_STREAM could be MEDIA_STREAM and a suffix could be added for type (_VIDEO, _AUDIO, idk), but if we want to truly support arbitrary types, we need to have a series of EXCLUSIVE_TYPE MEDIA_CALL protocol_registration toggles? Ex: EXCLUSIVE_MEDIA(_CALL_JOIN(_PRIVATE)(_TYPE)/)(_DATA) If necessary, cache retrieval functions could be passed a _DATA_ protocol to retrieve that type (so that audio can be retrieved seperately from video, etc).</li>
+			<li>Duress key: default `1984` destroys keys and deletes files, then starts up normally with blank everything. Allow changing, viewing (once logged in). Hash stored in plaintext database, plaintext stored in encrypted database (so you can "view to confirm" without "testing" it).</li>
+	<!--done	<li>b3sum_bin on files and file chunks should utilize threads and internal (not UI) callbacks (for what to do next), to prevent hang when sending/receiving large files.</li> -->
+	<!--done		<li>Convert audio_call.c to also support video transport. cam_on (similiar to mic_on) and participant_cam (similar to participant_mic), video_time/video_nstime, video_last_retrieved_time, audio_last_retrieved_nstime, video_cached_time, video_cached_nstime, and we would have to expand our record_cache_* and audio_cache_* functions to handle video and/or audio instead of just audio</li>
+			<ul>
+				<li>(Significant, existing bug) We need caching/delayed retrieval on receiver side. The "zero latency" of making immediate calls to audio_cache_retrieve() after every audio_cache_add_cb() consistently cause huge amounts of subsequent data dropped by audio_cache_add(). The reason it "works fine" on low-bandwidth audio is that it is only actually going out half-duplex -- when it hits full-duplex, losses likely start immediately. This can be implemented UI-side or library-side by utilizing a "how much ordered data do we have" checking function to be used before calls to audio_cache_retrieve(), or *plausibly* by significantly increasing frame size (cache_minimum_size in record_cache_add) to a level greater than the latency difference between the two transports (then nothing is ever out-of-order, but if it *is*, it is very bad) -- the added delays in sending would nullify the benefits of full-duplex though, so this really should be handled reciver-side.</li>
+				<li>AUDIO_STREAM could be MEDIA_STREAM and a suffix could be added for type (_VIDEO, _AUDIO, idk), but if we want to truly support arbitrary types, we need to have a series of EXCLUSIVE_TYPE MEDIA_CALL protocol_registration toggles? Ex: EXCLUSIVE_MEDIA(_CALL_JOIN(_PRIVATE)(_TYPE)/)(_DATA) If necessary, cache retrieval functions could be passed a _DATA_ protocol to retrieve that type (so that audio can be retrieved seperately from video, etc).</li>
+				<li>VP9 protocol, no container</li>
+			</ul> -->
 			<li>(I think we did this?) In read_conn(), we determine too late that a message was signed by us / "resent" to us. We should determine this earlier and exempt the message from most protocol-specific types of handling, including perhaps any stream handling. It should pretty much just be stored, if not a duplicate (as it already is after determination). This could be a simple goto after verifying signature, but we have to verify that nn / discard_after_processing / other gets set. We can use `if(group_peer_n > -1 && group_peer_n == event_strc->group_n)` because this is only an issue with group_check_sig / groups, not PMs / p2p where resent signed messages just fail sig checks.</li>
 			<li>Killing orphan Tor processes is unreliable, at least in ncurses.</li>
-			<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li>
+	<!--unnecessary	<li>Can audio_cache and cached_recording be stored outside the peer struct to avoid being subject to mutex?</li> -->
 			<li>Errors should not be called from within locks, including fatal errors. (Ex: getter_length())</li>
 			<li>Fatal errors (-1) should be examined and where possible (especially in void functions or functions that can return an error) there should be a graceful return</li>
 			<li>Headers: Certain macros, struct models (what about global structs like peer itself?), functions (including all _cb?), and global variables, do not in any circumstance need to be exposed to UI developers and can be moved from torx.h to torx-internal.h. This will reduce the frequency of API/ABI changes. Also, torx_insecure_malloc should be renamed torx_malloc_insecure, and things like evutil_closesocket and sodium_memzero should be abstracted away, then UI libraries won't need to necessarily pull in sodium/event when building shared libraries (CMakeLists.txt).</li>
@@ -175,6 +181,8 @@
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
+			<li>A protocol should exist for "requesting message history" and one for "compressed message history" in Private Groups. It should solely be used between the invitor and invitee, and ideally it should be optional (the send and the response) based on the UI choices made by the invitor and invitee (determined at offer time and join time).</li>
+			<li>When waking from suspend, we should assume all users are offline, otherwise outbound messages can be lost. This can be handled in the library by examining Tor logs (when not running system Tor). This is an issue primarily for Desktop especially on Mobian/PostmarketOS.</li>
 			<li>We should build automated tests for every library function</li>
 			<li>__func__ and __LINE__ can be passed as %s to error_printf(0,""); functions. At error level zero, they are likely of some novelty or use.</li>
 			<li>2026/06/25: Split path didn't get renamed or deleted, without an error being ghtorwn, on Linux, in /tmp. `Checkpoint DELETING SPLIT PATH` occured and no further debug output</li>
@@ -410,6 +418,7 @@
 		<h3>TODO List for GTK4 client:</h3>
 		<h4>High Priority / Security Audit:</h4>
 		<ul>
+			<li>Make right click equivalent to long press, perhaps except on touch screens (to prevent double triggering when long-press becomes right-click on some touch UIs)</li>
 			<li>Stickers:</li>
 			<ul>
 				<li>Update stickers when saved/deleted.</li>
@@ -486,6 +495,7 @@
 			<li>Can we prevent other applications from knowing this application is installed?</li>
 			<li>Client attempts to connect to https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3. Need to prevent that and verify that it isn't making other connections. We may need to fork all our dependencies to disable any firebase reference or remote connections.</li>
 			<li>Consider having a popup when adding something to clipboard. The clipboard would have a "Clear clipboard" and "Exit" option, along with a warning about other applications being able to steal clipboard contents. In some softwares (ie password managers), after ~45 seconds, it will clear the clipboard.</li>
+			<li>We can consider doing a security audit of our dependencies and, if they show reason for concern, vendoring all our dependencies.</li>
 		</ul>
 		<h4>Medium Priority:</h4>
 		<ul>
